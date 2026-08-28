@@ -1,0 +1,16 @@
+[package]
+name = "desk-courier"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+courier-core = { path = "../courier-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ureq = { version = "2", default-features = false }
+toml = "0.8"
+signal-hook = "0.3"
+
+[dev-dependencies]
+tiny_http = "0.12"

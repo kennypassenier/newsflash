@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Same toolchain as the local gate — rust-toolchain.toml pins
+      # 1.97.1 and rustup respects the pin (standing rule 7).
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Lint (warnings are errors)
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Full test suite
+        run: cargo test --all
+      - name: AR3 core I/O boundary
+        run: |
+          if grep -rnE '^[[:space:]]*use[[:space:]]+(ureq|std::(fs|net|process|io))' courier-core/src/; then
+            echo "courier-core imports ambient I/O (AR3) — move it to the shell"
+            exit 1
+          fi

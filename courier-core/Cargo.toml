@@ -1,0 +1,12 @@
+# Pure logic crate — zero ambient I/O (AR3). The gate greps for I/O
+# imports; the dependency list is the stronger fence: nothing here can
+# open a socket, a file or a process.
+[package]
+name = "courier-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
