@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "id": "01J6ZX3AC9V2N8KQ4T7R5E1WYD",
+  "ts": "2026-08-28T21:41:07+02:00",
+  "source": "ha",
+  "kind": "notification",
+  "audience": "kenny",
+  "priority": "warning",
+  "title": { "nl": "Vriezer", "en": "Freezer" },
+  "message": {
+    "nl": "Temperatuur loopt op: -11 °C",
+    "en": "Temperature rising: -11 °C"
+  },
+  "tts": {
+    "nl": "De vriezer wordt warmer.",
+    "en": "The freezer is warming up."
+  },
+  "ack_id": "freezer_temp_high",
+  "click_url": "http://homeassistant.local:8123/lovelace/keuken",
+  "data": { "entity_id": "sensor.freezer_temperature", "value": -11.2 }
+}
