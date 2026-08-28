@@ -45,6 +45,23 @@ fn m2_ar10_config_validation_names_field_and_remedy() {
     let p = write_config("ttl0.toml", "hub_url = \"http://h:1\"\nttl_minutes = 0");
     assert!(config::load(&p).unwrap_err().contains("ttl_minutes"));
 
+    // G16: an explicitly empty topic/subscription is refused, not
+    // silently turned into a malformed URL.
+    let p = write_config("emptytopic.toml", "hub_url = \"http://h:1\"\ntopic = \"\"");
+    assert!(config::load(&p).unwrap_err().contains("topic"));
+    let p = write_config(
+        "emptysub.toml",
+        "hub_url = \"http://h:1\"\nsubscription = \" \"",
+    );
+    assert!(config::load(&p).unwrap_err().contains("subscription"));
+
+    // G16: an absurd ttl cannot overflow downstream arithmetic.
+    let p = write_config(
+        "ttlhuge.toml",
+        "hub_url = \"http://h:1\"\nttl_minutes = 99999999999",
+    );
+    assert!(config::load(&p).unwrap_err().contains("year"));
+
     // Unknown language refused.
     let p = write_config("lang.toml", "hub_url = \"http://h:1\"\nlanguage = \"de\"");
     assert!(config::load(&p).unwrap_err().contains("nl"));

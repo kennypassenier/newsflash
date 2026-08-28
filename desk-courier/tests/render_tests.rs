@@ -62,6 +62,17 @@ fn l3_render_shell_via_path_shims() {
         "unexpected notify-send argv: {logged}"
     );
 
+    // M1: the argv promise holds for every priority, not just critical
+    // (hardening gap G12).
+    let env = parse_envelope(br#"{"v":1,"id":"x","priority":"info","title":{"nl":"I"}}"#).unwrap();
+    assert_eq!(show_toast(&toast_spec(&env, Language::Nl)), RunOutcome::Ok);
+    let env =
+        parse_envelope(br#"{"v":1,"id":"x","priority":"warning","title":{"nl":"W"}}"#).unwrap();
+    assert_eq!(show_toast(&toast_spec(&env, Language::Nl)), RunOutcome::Ok);
+    let logged = std::fs::read_to_string(&log).unwrap();
+    assert!(logged.contains("--urgency=normal --expire-time=10000 -- I"));
+    assert!(logged.contains("--urgency=normal --expire-time=30000 -- W"));
+
     // K3: a failing renderer reports Failed (the loop nacks).
     std::fs::write(&fail_flag, "").unwrap();
     assert!(matches!(show_toast(&spec), RunOutcome::Failed(_)));

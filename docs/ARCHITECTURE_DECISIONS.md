@@ -294,8 +294,9 @@ rejected (it trades one silent state for another).
 yet (login race) or anymore must not burn delivery attempts —
 consume-and-nack ×5 dead-letters real, renderable messages (critic).
 Before the first poll and after any render failure, the shell probes
-the daemon (`gdbus call … GetServerInformation` — a query, not a
-notification); while the probe fails, the courier **holds** (no
+the daemon (`busctl --user call … GetServerInformation` — a query, not
+a notification; busctl over gdbus because systemd is guaranteed on the
+target platform); while the probe fails, the courier **holds** (no
 polling — messages wait at the hub under the TTL, which is exactly
 the designed semantics) on the AR9 schedule with its own named state.
 AR20's `After=graphical-session.target` makes this a rare path, not

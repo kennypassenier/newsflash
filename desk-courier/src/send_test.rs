@@ -31,6 +31,16 @@ pub fn build_envelope(msg: &TestMessage) -> String {
 }
 
 pub fn run(config: &Config, msg: &TestMessage) -> i32 {
+    // The drill tool must not mislead a drill (hardening gap G11): a
+    // typo'd priority silently rendering as info would read as "critical
+    // toasts are broken".
+    if !["info", "warning", "critical"].contains(&msg.priority.as_str()) {
+        eprintln!(
+            "priority {:?} is not a v1 priority. Use info, warning or critical.",
+            msg.priority
+        );
+        return 2;
+    }
     let client = HubClient::new(config);
     match client.publish(&build_envelope(msg)) {
         Ok(id) => {

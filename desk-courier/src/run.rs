@@ -210,6 +210,16 @@ fn handle_message(
     match pre_render(&parsed, &message.id, seen, stale) {
         PreRender::Render => {
             let env = parsed.as_ref().expect("Render implies parsed");
+            if let Some(p) = env.priority.as_deref()
+                && !["info", "warning", "critical"].contains(&p)
+            {
+                // M11: the tolerant mapping must not be silent — when
+                // pipeline-v2 grows a new priority, the journal says so.
+                logx::warn(&format!(
+                    "{}: unknown priority {p:?} rendered as info (AR4 tolerant reader)",
+                    message.id
+                ));
+            }
             let spec = toast_spec(env, config.language);
             match post_render(matches!(show_toast(&spec), RunOutcome::Ok)) {
                 PostRender::MarkSeenThenAck => {

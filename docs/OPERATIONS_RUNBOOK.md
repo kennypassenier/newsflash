@@ -1,0 +1,98 @@
+# Operations runbook — desk-courier
+
+Numbered procedures, written in Phase 8 from what was actually executed
+(drill log has the evidence). One-time repo activation after a fresh
+clone: `git config core.hooksPath .githooks` (see README).
+
+## R1 · First-time install on the PC
+
+1. Build and install the binary:
+   ```
+   cd ~/Projects/hub-clients && cargo install --path desk-courier
+   ```
+2. Config:
+   ```
+   mkdir -p ~/.config/desk-courier
+   cp config.example.toml ~/.config/desk-courier/config.toml
+   ```
+   Set `hub_url` (live hub: `http://10.10.10.9:8080`).
+3. Token (M6): mint an app token named `desk-courier` on the hub's
+   `/apps` page, then store it in latch for this project:
+   ```
+   cd ~/Projects/hub-clients && latch init   # once
+   # put MAILBOX_TOKEN=<token> in the latch env for this project
+   ```
+   *(No latch? Fallback: put the token in
+   `~/.config/desk-courier/token`, `chmod 600` it, and set `token_file`
+   in the config — the unit file comments show the EnvironmentFile
+   variant.)*
+4. Unit:
+   ```
+   mkdir -p ~/.config/systemd/user
+   cp systemd/desk-courier.service ~/.config/systemd/user/
+   systemctl --user daemon-reload
+   systemctl --user enable --now desk-courier
+   ```
+5. Verify: `journalctl --user -u desk-courier -n 5` shows the startup
+   summary and `hub reachable`; then
+   `desk-courier send-test --title Proef --message "Werkt het?"` pops a
+   toast within a second or two.
+
+Status 2026-08-29: steps 1–2 and the unit's `systemd-analyze verify`
+are drilled; steps 3–4 wait for Kenny (token minting is outward-facing,
+enabling the unit is deployment — AFK queue).
+
+## R2 · Update (M5 — no self-update, by decision)
+
+1. `cd ~/Projects/hub-clients && git pull`
+2. `cargo install --path desk-courier`
+3. `systemctl --user restart desk-courier`
+4. `journalctl --user -u desk-courier -n 3` — the startup summary line
+   shows the new version.
+
+## R3 · Restore from zero (M7)
+
+State inventory: config (this repo has the example; the real file is
+one copy), token (lives in latch, rides latch's own escrow), dedup
+cache (throwaway — worst case one duplicate toast). Therefore:
+
+1. Clone the repo, activate hooks:
+   `git clone <repo> ~/Projects/hub-clients && cd ~/Projects/hub-clients && git config core.hooksPath .githooks`
+2. Run R1. Done — there is nothing else to restore, by design.
+
+Drilled 2026-08-29: clean clone → release build → live publish against
+the scratch hub succeeded first try (DRILL_LOG.md).
+
+## R4 · Token rotated or revoked
+
+Symptom: journal shows `hub rejected the token (401/403)` with the
+remedy line; toasts stop; the courier keeps retrying (that is the
+designed behaviour — nothing crashes).
+
+1. Mint a new `desk-courier` token on the hub's `/apps` page; revoke
+   the old one there.
+2. Update the latch secret (or the token file).
+3. `systemctl --user restart desk-courier`.
+
+## R5 · No toasts, hub fine — triage order
+
+1. `systemctl --user status desk-courier` — running at all? (Logged
+   out = not running, by design: AR20.)
+2. `journalctl --user -u desk-courier -n 20` — the state lines say
+   which of the named states holds: `hub unreachable`, `auth rejected`,
+   `no notification daemon`, `topic does not exist yet`, `subscription
+   was archived` (self-heals), or quiet 204 polling (all healthy).
+3. Hub side: the topic page on the hub dashboard shows the `desktop`
+   subscription, its backlog and dead letters; `desk-courier send-test`
+   publishes a known-good envelope past every upstream suspect.
+4. Longer story: docs/DEBUGGING_GUIDE.md.
+
+## R6 · Scratch hub for development (standing rule 14)
+
+```
+MAILBOX_LISTEN=127.0.0.1:18925 MAILBOX_DATA_DIR=/tmp/dc-scratch \
+  ~/Projects/mailbox/target/release/mailbox
+./scripts/drill.sh        # the ignored live tests against it
+```
+The live hub on LXC 109 is never touched by development — only as an
+agreed explicit step.

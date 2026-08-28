@@ -14,7 +14,6 @@ use std::time::Duration;
 struct ScratchHub {
     child: Child,
     url: String,
-    #[allow(dead_code)]
     dir: std::path::PathBuf,
 }
 
@@ -209,4 +208,46 @@ fn live_ar21_unarchive_on_a_healthy_subscription_is_a_safe_noop() {
     client.publish(&envelope("Na archief")).unwrap();
     let (m, _) = client.receive(false).unwrap().expect("still receiving");
     let _ = client.settle(&m.id, true, false);
+}
+
+#[test]
+#[ignore = "needs the real mailbox binary; run via scripts/drill.sh"]
+fn live_k8_s6d_the_hub_dying_and_returning_is_survived() {
+    let mut hub = start_hub(18936);
+    let client = HubClient::new(&config_for(&hub));
+
+    client.publish(&envelope("Voor de crash")).unwrap();
+    let (m, _) = client.receive(true).unwrap().expect("message due");
+    let _ = client.settle(&m.id, true, false);
+
+    // The hub dies mid-run: the client reports unreachable, not a panic.
+    hub.child.kill().unwrap();
+    hub.child.wait().unwrap();
+    let err = client.receive(false).unwrap_err();
+    assert_eq!(
+        courier_core::hub::classify_receive_status(err.status),
+        courier_core::hub::HubErrorClass::Unreachable
+    );
+
+    // Same port, same data dir: the hub returns and the client resumes
+    // where it left off (K12 recovery on the hub side).
+    let revived = Command::new(mailbox_bin())
+        .env("MAILBOX_LISTEN", "127.0.0.1:18936")
+        .env("MAILBOX_DATA_DIR", &hub.dir)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    hub.child = revived;
+    for _ in 0..50 {
+        if ureq::get(&format!("{}/healthz", hub.url)).call().is_ok() {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    client.publish(&envelope("Na de crash")).unwrap();
+    let (m2, _) = client.receive(false).unwrap().expect("resumed receiving");
+    let env2 = parse_from_hub(&m2.payload).unwrap();
+    assert_eq!(env2.title.unwrap().nl.as_deref(), Some("Na de crash"));
+    let _ = client.settle(&m2.id, true, false);
 }

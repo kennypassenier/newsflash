@@ -94,6 +94,24 @@ pub fn load(path: &Path) -> Result<Config, String> {
                 .to_string(),
         );
     }
+    // A year is already absurd for a toast; anything larger risks
+    // arithmetic overflow downstream (hardening gap G16).
+    if ttl_minutes > 525_600 {
+        return Err(format!(
+            "ttl_minutes = {ttl_minutes} is longer than a year. Use something sane \
+             (default 10, per SCOPE S4)."
+        ));
+    }
+
+    let topic = raw.topic.unwrap_or_else(|| "notify.kenny".to_string());
+    let subscription = raw.subscription.unwrap_or_else(|| "desktop".to_string());
+    for (field, value) in [("topic", &topic), ("subscription", &subscription)] {
+        if value.trim().is_empty() {
+            return Err(format!(
+                "{field} is empty. Remove the key to use the default, or set a real name."
+            ));
+        }
+    }
 
     let sound_file = match raw.sound_file {
         None => None,
@@ -113,8 +131,8 @@ pub fn load(path: &Path) -> Result<Config, String> {
 
     Ok(Config {
         hub_url,
-        topic: raw.topic.unwrap_or_else(|| "notify.kenny".to_string()),
-        subscription: raw.subscription.unwrap_or_else(|| "desktop".to_string()),
+        topic,
+        subscription,
         language,
         ttl_ms: ttl_minutes * 60_000,
         sound_file,
