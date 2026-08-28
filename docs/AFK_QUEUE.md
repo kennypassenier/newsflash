@@ -36,6 +36,33 @@ See `docs/REALIZATION_PLAN.md`. Hooks installed locally (git-native +
 Claude-layer); CI workflow written but **no GitHub remote yet** — see
 "Deliberately not done" below.
 
+### R5 · Phase 7 — hardening gate
+See `docs/TEST_PLAN.md`: the audit's 17 gaps with the decisions built
+(12 closed, 3 accepted, 4 Later) and the clean security review.
+
+### R6 · Phase 8 — per-document approval
+README, USER_GUIDE, DEBUGGING_GUIDE, OPERATIONS_RUNBOOK,
+ARCHITECTURE_REFERENCE, TEST_PLAN — drafted from code and tests;
+every "proven by" names an existing test or a logged drill.
+
+### Extra decision items surfaced during the build (fold into the forms)
+
+- **S6b sharpened:** "dedup on the envelope id" is implemented as the
+  **hub message id** (critic, blocking): poison payloads have no
+  parseable id, redelivery reuses the hub id, and an intentional
+  republish must still toast. The payload id is log-only.
+- **Cold start:** the first poll of every run (and after an unarchive)
+  uses `from=beginning` — drill-proven necessity, added after the
+  critic round (AR7 amendment).
+- **K6 default:** sound is OFF until a `sound_file` is configured (and
+  no chime file ships in the repo — picking one is Kenny's taste).
+- **AR22 shape:** render trouble makes the courier *hold* (stop
+  consuming) rather than burn delivery attempts; probe via busctl.
+- **Critic ⚔ embeds to ratify:** AR6 crash-loop amplification
+  (mitigated via StartLimitBurst), AR11 critical-bypasses-DND (chosen),
+  AR12 exit-code coarseness, AR16 honesty note ("expiry recorded" is
+  dashboard-visible only until hub-bridge P8 consumes mailbox.events).
+
 ## Deliberately not done (needs Kenny's explicit go)
 
 - **GitHub repo creation + branch protection** (standing rules 6, 13:

@@ -16,10 +16,16 @@ gates hold from any session or terminal. After a fresh clone, run:
 
 | Field | Value |
 |---|---|
-| Current phase | 6 · Development loop (AFK build) |
-| Last completed gate | Phase 0 (2026-08-28, Kenny's form answers) |
-| Next gate | AFK ratification queue — docs/AFK_QUEUE.md, present FIRST on Kenny's return |
+| Current phase | 8 done (AFK-provisional) — awaiting ratification, then Phase 9 |
+| Last completed gate | Phase 0 (2026-08-28, Kenny's form answers); phases 1–8 built AFK along recommendations 2026-08-29 |
+| Next gate | **docs/AFK_QUEUE.md — present FIRST on Kenny's return** (R1–R6 ratification rounds as forms), then Phase 9 tag & release (always Kenny's go) |
 | AFK mode | **ON** since 2026-08-28 ("develop al zoveel mogelijk gebaseerd op deze antwoorden") |
+
+State in one line: 62 automated tests + 6 live drill tests green, S6a–d
+drilled on the real desktop against a scratch hub, hardening + docs
+done; NOT done (needs Kenny): GitHub remote + branch protection, app
+token on the live hub + latch project, enabling the systemd unit,
+ratification forms, release.
 
 **AFK rule in force:** phases 1–8 run along the recommended choices;
 every gate that normally needs Kenny becomes a ratification round in

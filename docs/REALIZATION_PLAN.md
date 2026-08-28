@@ -42,4 +42,5 @@ with a temp data dir on a high port — never the live hub on LXC 109.
 
 | Gate | Date | Decided | Landed in |
 |---|---|---|---|
-| _none yet_ | | | |
+| Phase 7 · hardening | 2026-08-29 | AFK-provisional: 12 gaps closed same day, 3 accepted, 4 Later — per the auditor's recommendations; security review ran, no findings. Ratification = R5 | docs/TEST_PLAN.md |
+| Phase 8 · documentation | 2026-08-29 | AFK-provisional: README + USER_GUIDE + DEBUGGING_GUIDE + OPERATIONS_RUNBOOK + ARCHITECTURE_REFERENCE drafted from code/tests; per-document approval = R6 | README.md + docs/ |
