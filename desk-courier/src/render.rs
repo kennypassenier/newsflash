@@ -17,7 +17,9 @@ pub enum RunOutcome {
 
 /// Spawn + poll with a deadline; a child past the deadline is killed
 /// and reported as failed (AR19 — settles as the transient row).
-fn run_with_timeout(mut cmd: Command, timeout: Duration) -> RunOutcome {
+/// Public so tests can exercise the timeout branch with a short
+/// deadline instead of waiting out CHILD_TIMEOUT.
+pub fn run_with_timeout(mut cmd: Command, timeout: Duration) -> RunOutcome {
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
