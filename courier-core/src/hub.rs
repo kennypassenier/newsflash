@@ -89,6 +89,10 @@ pub enum HubErrorClass {
     Auth,
     /// 409 on the receive path — archived subscription (AR21).
     Archived,
+    /// 404 — the topic does not exist yet: nothing has ever published
+    /// (drill-proven on a fresh hub, 2026-08-29). A normal pre-first-
+    /// publish state: wait quietly, not an error worth alarm.
+    TopicMissing,
     /// Anything else 4xx — log and back off; a client bug, not a hub outage.
     Other,
 }
@@ -99,6 +103,7 @@ pub fn classify_receive_status(status: Option<u16>) -> HubErrorClass {
         Some(s) if s >= 500 => HubErrorClass::Unreachable,
         Some(401) | Some(403) => HubErrorClass::Auth,
         Some(409) => HubErrorClass::Archived,
+        Some(404) => HubErrorClass::TopicMissing,
         Some(_) => HubErrorClass::Other,
     }
 }
@@ -151,6 +156,10 @@ mod tests {
         assert_eq!(classify_receive_status(Some(401)), HubErrorClass::Auth);
         assert_eq!(classify_receive_status(Some(403)), HubErrorClass::Auth);
         assert_eq!(classify_receive_status(Some(409)), HubErrorClass::Archived);
-        assert_eq!(classify_receive_status(Some(404)), HubErrorClass::Other);
+        assert_eq!(
+            classify_receive_status(Some(404)),
+            HubErrorClass::TopicMissing
+        );
+        assert_eq!(classify_receive_status(Some(400)), HubErrorClass::Other);
     }
 }

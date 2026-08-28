@@ -108,7 +108,9 @@ The courier owns exactly one policy field: it PUTs
 **`{"ttl_ms": 600000}`** (config default, S4) and nothing else, so
 lease/attempts/backoff track the hub's defaults forever. Startup order
 honors the first-poll trap (hub K2: a subscription starts existing
-when it first polls): **poll once → then assert the policy** —
+when it first polls; drill-proven 2026-08-29: a policy PUT on an
+unpolled subscription answers 404): **poll once → then assert the
+policy** —
 asserting means GET, compare the *explicitly-set* field set against
 `{ttl_ms}`, PUT only on difference, and log when the diff overrode a
 human's dashboard edit (the policy is code; the override is intended
@@ -118,6 +120,14 @@ moment systemd watches exit codes). The policy is re-asserted on
 **every reconnect** (AR9's recovered transition), so a hub restored
 from a backup predating the policy cannot silently shed the TTL and
 rebuild the stale-toast pile S4 forbids.
+
+**Cold start (drill-found, 2026-08-29):** a fresh subscription only
+sees what is published after its first poll — the L2 drill proved a
+message published before that poll is invisible to it. The first poll
+of every run (and the first after an unarchive) therefore adds
+`from=beginning`: replay is idempotent and bounded (hub K8), dedup
+absorbs the seen, the staleness check acks the old. Steady-state cost:
+zero. *(Flagged for ratification: an addition after the critic round.)*
 
 ### AR8 · Error model
 `courier-core`: hand-rolled error enums, every variant carrying a
@@ -137,6 +147,9 @@ not impersonate designed degradation):
   loop), but a *distinct* state and log line carrying the remedy:
   "re-mint at /apps, restart the unit". Nothing silent.
 - **409 archived** — see AR21.
+- **404 topic-missing** — the topic has never been published to
+  (drill-proven on a fresh hub): a normal pre-pipeline-v2 state, its
+  own quiet "waiting" log line, plain backoff.
 
 ### AR10 · Token handling: environment first, never inline
 Token source order: `MAILBOX_TOKEN` env var (what `latch run` injects
@@ -242,11 +255,14 @@ knobs.
 
 ### AR19 · Timeouts (critic, blocking — the difference between
 "degrades to no toasts" and "silently frozen until a manual restart")
+- Poll wait window: **20 s** (`wait=20` — shorter than the hub's 30 s
+  default so a SIGTERM mid-poll settles well inside AR20's stop
+  timeout; idle cost: 3 polls/min).
 - HTTP connect: **5 s**.
-- HTTP read: **poll wait + 10 s** (default wait 30 s → 40 s read
-  timeout); non-poll calls 10 s. A zombie TCP connection after
-  suspend/resume or a hub-host power loss self-heals in ≤ ~40 s via
-  the normal AR9 path — no special resume code.
+- HTTP read: **poll wait + 10 s = 30 s**; non-poll calls 10 s. A
+  zombie TCP connection after suspend/resume or a hub-host power loss
+  self-heals in ≤ ~30 s via the normal AR9 path — no special resume
+  code.
 - Subprocess: **10 s** kill-and-settle-transient (AR12).
 
 ### AR20 · systemd unit topology (critic: the unit file is
@@ -258,8 +274,8 @@ architecture, not packaging)
 - `Restart=on-failure`, `StartLimitIntervalSec=120`,
   `StartLimitBurst=5` — restarts survive crashes; a crash loop stops
   before AR6's duplicate-amplification wallpapers the screen.
-- `TimeoutStopSec=15` — bounded stop, comfortably above AR19's worst
-  in-flight settle.
+- `TimeoutStopSec=45` — bounded stop, comfortably above AR19's worst
+  case (a 30 s poll read plus a settle).
 
 ### AR21 · Archived subscription: auto-unarchive, loudly
 Hub K11: idle 7 days → flagged, 30 days → archived; polling never
