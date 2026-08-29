@@ -16,9 +16,9 @@ gates hold from any session or terminal. After a fresh clone, run:
 
 | Field | Value |
 |---|---|
-| Current phase | 10 · Retrospective |
-| Last completed gate | Phase 9 (2026-08-30): v0.1.0 tagged + Release published on Kenny's go; dogfood done (live toast through the enabled unit) |
-| Next gate | Phase 10 retro form → diff on ~/Projects/dev-procedure |
+| Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30) |
+| Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
+| Next gate | none — new work (e.g. a vault-courier gate, envelope-v2 mini-round when pipeline-v2 freezes its schema) starts as a mini-round or new phase round in a fresh session here |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`),
