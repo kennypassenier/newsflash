@@ -16,37 +16,11 @@ gates hold from any session or terminal. After a fresh clone, run:
 
 | Field | Value |
 |---|---|
-| Current phase | 9 · Release & lifecycle (preparation) |
-| Last completed gate | AFK ratification 2026-08-29: F1–F18 all ratified; freezes definitive |
-| Next gate | Phase 9 report form ending in "Tag & release?" — after the dogfood run (= first real toast from the live hub once F20/F21 land) |
+| Current phase | 10 · Retrospective |
+| Last completed gate | Phase 9 (2026-08-30): v0.1.0 tagged + Release published on Kenny's go; dogfood done (live toast through the enabled unit) |
+| Next gate | Phase 10 retro form → diff on ~/Projects/dev-procedure |
 | AFK mode | off since 2026-08-29 |
 
-Open follow-ups: F20 Kenny mints the `desk-courier` app token on the
-live hub `/apps` page and reports back → then Claude does `latch init`
-+ secret + unit enable + send-test verification (F21, agreed), then the
-Phase 9 gate. GitHub repo/protection: see README + gate log.
-
-**AFK rule in force:** phases 1–8 run along the recommended choices;
-every gate that normally needs Kenny becomes a ratification round in
-`docs/AFK_QUEUE.md`. Phase 9 (tag & release) and anything outward-facing
-(GitHub repo creation, enabling the service on the PC, touching the live
-hub) waits for Kenny — queued, never done silently.
-
-## Project documents
-
-| Doc | Purpose |
-|---|---|
-| docs/SCOPE.md | goals, non-goals, success criteria, constraints (Phase 0) |
-| docs/FEATURES.md | rated feature list with permanent IDs (Phase 2) |
-| docs/ARCHITECTURE_DECISIONS.md | frozen AR decisions incl. tech choice (Phases 3-4) |
-| docs/REALIZATION_PLAN.md | milestones + status table + gate log (Phase 5+) |
-| docs/TEST_PLAN.md | what is proven where + accepted limitations (Phase 7) |
-| docs/AFK_QUEUE.md | pending ratification rounds — first thing on Kenny's return |
-
-## Gates (enforced)
-
-Commits are blocked unless `.claude/hooks/gates.sh` passes and the
-message carries IDs in brackets (`[K3, AR2]`, `[L1]`, `[meta]`).
-Enforced twice: `.githooks/` (git-native, any session) and
-`.claude/hooks/check-commit.sh` (sessions opened here). CI re-runs the
-gates on every push once a remote exists (queued for Kenny's go).
+Deployed and running: unit enabled, token via latch (`KYU_TOKEN`),
+policy asserted on the live hub. Only Phase 10 (retro + ecosystem
+candidacy, diff on dev-procedure) remains.
