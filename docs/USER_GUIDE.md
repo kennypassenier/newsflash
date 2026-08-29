@@ -3,7 +3,7 @@
 Everything desk-courier does, one feature at a time. Written in Phase 8
 from the code and tests; every claim names where it is proven
 (unit/mock tests run in `cargo test --all`; `live_*` tests run against
-the real mailbox binary via `scripts/drill.sh`; desktop-level behaviour
+the real kyu binary via `scripts/drill.sh`; desktop-level behaviour
 cites the drill log).
 
 If you have two minutes: install per runbook R1, run
@@ -64,7 +64,7 @@ On startup (after the first poll) and after every reconnect, the
 courier asserts the subscription policy: it PUTs exactly
 `{"ttl_ms": 600000}` — the one field it owns; lease/attempts keep
 tracking the hub's defaults. A day logged out therefore expires at the
-hub — counted in metrics and announced on `mailbox.events`, never
+hub — counted in metrics and announced on `kyu.events`, never
 silent — and login shows zero stale toasts. Messages the hub could not
 expire (claimed just before a suspend) are caught by the courier's own
 TTL check and acked unrendered.
@@ -110,7 +110,7 @@ notification daemon` (holds without consuming).
 
 ## K9 · The token stays invisible
 
-Token via `MAILBOX_TOKEN` (latch-injected) or a 0600 `token_file`; an
+Token via `KYU_TOKEN` (latch-injected) or a 0600 `token_file`; an
 inline token in the config is refused with a remedy. It reaches the
 wire as a Bearer header and appears nowhere else — not in logs, argv,
 URLs or error text.

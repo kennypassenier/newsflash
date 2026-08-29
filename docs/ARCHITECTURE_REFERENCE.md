@@ -7,7 +7,7 @@ The *decisions* and their reasoning live in
 ## Shape
 
 ```
-notify.kenny topic (mailbox hub, LXC 109)
+notify.kenny topic (kyu hub, LXC 109)
         │  long-poll GET /t/notify.kenny/next?as=desktop&envelope=json&wait=20
         ▼
 ┌─ desk-courier (systemd user service, Garuda PC) ─────────────┐
@@ -59,7 +59,7 @@ shell that gives it a hub, a desktop, a filesystem and a clock.
 
 ## Trust and secrets
 
-Token from `MAILBOX_TOKEN` (latch-injected via the unit's
+Token from `KYU_TOKEN` (latch-injected via the unit's
 `latch run`, resolved through `WorkingDirectory`) or a 0600
 `token_file`; inline config tokens refused. The token exists in memory
 and the `authorization` header only — scan-tested on both binary

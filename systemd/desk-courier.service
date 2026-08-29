@@ -6,7 +6,7 @@
 # see docs/OPERATIONS_RUNBOOK.md R1.
 
 [Unit]
-Description=desk-courier — mailbox hub messages as desktop toasts
+Description=desk-courier — kyu hub messages as desktop toasts
 # Start after the session (and its notification service) is up; STOP at
 # logout — no session-less courier acking toasts nobody sees (AR20);
 # the subscription's TTL cleans the logged-out gap (S4).
@@ -19,7 +19,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-# M6: latch injects MAILBOX_TOKEN; nothing secret in this file or argv.
+# M6: latch injects KYU_TOKEN; nothing secret in this file or argv.
 # latch resolves its project from the working directory (drill-proven
 # 2026-08-29), so point it at the linked repo.
 # Fallback without latch: replace ExecStart with the plain binary and

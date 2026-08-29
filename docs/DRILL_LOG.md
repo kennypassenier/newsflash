@@ -1,12 +1,12 @@
 # Drill log — desk-courier
 
 Live-drill evidence per standing rule 14 / AR18. Every drill ran on a
-**scratch hub** (local `mailbox` binary, `127.0.0.1:18925`, temp data
+**scratch hub** (local `kyu` binary, `127.0.0.1:18925`, temp data
 dir) — the live hub on LXC 109 was never touched.
 
 ## 2026-08-29 · L2 — hub contract drills (scripts/drill.sh)
 
-All five `#[ignore]` live tests green against the real mailbox binary:
+All five `#[ignore]` live tests green against the real kyu binary:
 
 - `live_s6a_publish_receive_ack_round_trip`
 - `live_k5_ar7_policy_bootstrap_is_idempotent_and_effective` (incl.
@@ -44,7 +44,7 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   in `$XDG_STATE_HOME/desk-courier/`.
 - **S6c** — with `ttl_ms=60000` on the subscription and the courier
   down, a published message expired hub-side: metrics show
-  `mailbox_deliveries{…,state="expired"} 1`, `mailbox.events` carries
+  `kyu_deliveries{…,state="expired"} 1`, `kyu.events` carries
   `{"event":"message.expired","count":1,…}`, and the restarted courier
   rendered nothing — zero stale toasts, expiry recorded, never silent.
 - **First drill mishap, recorded honestly:** the first S6d attempt
@@ -62,6 +62,6 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   scope (`systemd-run --user`): latch 2.2.0.
 - `latch run` resolves its project from the **working directory** →
   the unit sets `WorkingDirectory=%h/Projects/hub-clients`. The full
-  end-to-end (latch project + real `MAILBOX_TOKEN` secret + enabled
+  end-to-end (latch project + real `KYU_TOKEN` secret + enabled
   unit) waits for Kenny: token minting on the live hub's /apps page is
   queued (AFK queue, "Deliberately not done").

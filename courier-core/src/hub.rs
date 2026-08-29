@@ -1,12 +1,12 @@
 //! The hub side of the wire (pure parsing): the `envelope=json`
 //! receive response and the status classification the loop acts on.
 //! The response shape is pinned by a vector captured from the real
-//! mailbox binary (AR18) — see `tests/vectors/`.
+//! kyu binary (AR18) — see `tests/vectors/`.
 
 use serde::Deserialize;
 
 /// One payload key is always present, and which one says how the hub
-/// understood the bytes (mailbox G8: never a silent transformation).
+/// understood the bytes (kyu G8: never a silent transformation).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HubPayload {
     Json(serde_json::Value),

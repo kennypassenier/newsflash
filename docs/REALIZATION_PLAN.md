@@ -12,7 +12,7 @@ protection wait for Kenny's go (outward-facing, standing rule 13).
 |---|---|---|---|---|
 | L0 | Walking skeleton — workspace (`courier-core` + `desk-courier`), `--version`, hooks live, CI written, gates green on empty crates | [meta] | `cargo test --all` green; commit blocked without IDs; gates block a broken build | done 2026-08-29 |
 | L1 | Core logic — envelope v1 parsing (pinned vector), settle/decision table, dedup bookkeeping, toast mapping, backoff schedule; all pure, all unit-tested | AR4, AR5, K4, M1, M3, M9 | Every decision table row has a test; regression vector pinned; core has zero I/O imports (gate) | done 2026-08-29 (43 core tests) |
-| L2 | Hub client shell — long-poll receive, ack/nack, policy bootstrap, bearer auth; mock-hub unit tests + live tests against the real mailbox binary | K1, K3, K5, K9, AR7 | Live round-trip on a scratch hub: publish → consume → ack → gone; policy bootstrap idempotent; token never logged (scan test) | done 2026-08-29 (mock+live, drill log) |
+| L2 | Hub client shell — long-poll receive, ack/nack, policy bootstrap, bearer auth; mock-hub unit tests + live tests against the real kyu binary | K1, K3, K5, K9, AR7 | Live round-trip on a scratch hub: publish → consume → ack → gone; policy bootstrap idempotent; token never logged (scan test) | done 2026-08-29 (mock+live, drill log) |
 | L3 | Rendering shell — `notify-send`/`paplay` via PATH shims, urgency mapping wired, `send-test` subcommand | K2, K6, M8 | Fake-renderer argv asserted per priority; sound fires only when configured; `send-test` publishes a valid v1 envelope | done 2026-08-29 (shim tests + real-desktop toast) |
 | L4 | The loop — config load/validation, resilience (backoff, no crash), graceful shutdown, dedup persistence, logging | K8, M2, M4, M11 | Live test: hub killed and restarted mid-run, courier survives and resumes; SIGTERM settles in-flight; startup summary logged | done 2026-08-29 (S6d/M4 drills) |
 | L5 | Ship shape — systemd unit + activation/update/restore runbook procedures, config example, full S6 drill on the scratch hub | K7, M5, M7 | S6a–S6d each demonstrated live and recorded in the drill log; unit verifies; runbook procedures executed once | done 2026-08-29 — unit verified; R3 restore drilled from a clean checkout; R2 update: build path drilled, the restart step and R1 activation await the enabled unit (Kenny) |
@@ -21,7 +21,7 @@ Order rationale: pure core first (cheapest tests), then the two shells
 (hub, desktop) each against their real dependency, then the loop that
 composes them, then packaging. Every milestone from L2 on includes at
 least one live drill on the scratch resource (standing rule 14): the
-**scratch hub** is a local run of `~/Projects/mailbox/target/release/mailbox`
+**scratch hub** is a local run of `~/Projects/kyu/target/release/kyu`
 with a temp data dir on a high port — never the live hub on LXC 109.
 
 ## Enforcement (installed before L0)

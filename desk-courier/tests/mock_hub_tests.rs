@@ -1,5 +1,5 @@
 //! K1/K3/K5/K9 against a mock hub. The mock's envelope body is the
-//! vector captured from the REAL mailbox binary during the L2 drill
+//! vector captured from the REAL kyu binary during the L2 drill
 //! (AR18) — the mock serves evidence, not fiction. What the mock
 //! cannot express (real lease/redelivery/TTL/archive semantics) is
 //! covered by the live tests in `live_hub_tests.rs`.
@@ -186,7 +186,7 @@ fn k9_the_token_reaches_the_wire_but_never_the_output() {
         .args(["send-test", "--config"])
         .arg(&cfg)
         .args(["--title", "Scan", "--message", "scan test"])
-        .env("MAILBOX_TOKEN", "SECRET-SCAN-TOKEN-9f3")
+        .env("KYU_TOKEN", "SECRET-SCAN-TOKEN-9f3")
         .output()
         .unwrap();
 

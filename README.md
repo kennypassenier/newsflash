@@ -1,6 +1,6 @@
 # hub-clients
 
-Consumer binaries for the [mailbox](../mailbox) message hub that run on
+Consumer binaries for the [kyu](../kyu) message hub that run on
 Kenny's PC as systemd **user** services.
 
 **desk-courier** — long-polls subscription `desktop` on topic
@@ -19,7 +19,7 @@ decision pending.)*
 
 See `docs/OPERATIONS_RUNBOOK.md` R1 for the numbered install. In short:
 `cargo install --path desk-courier`, copy `config.example.toml` to
-`~/.config/desk-courier/config.toml`, provide `MAILBOX_TOKEN` via
+`~/.config/desk-courier/config.toml`, provide `KYU_TOKEN` via
 `latch run` (or a 0600 `token_file`), install the systemd user unit
 from `systemd/`.
 
@@ -44,7 +44,7 @@ commit-message ID rule. CI re-runs the same gates on every push.
 
 - `cargo test --all` — unit + mock-hub tests (CI-safe).
 - `./scripts/drill.sh` — the `#[ignore]` live tests against a real
-  local mailbox binary (`MAILBOX_BIN` to override the path). Drills run
+  local kyu binary (`KYU_BIN` to override the path). Drills run
   against scratch hubs only; the live hub is never touched.
 - Docs: `docs/SCOPE.md` (what and why), `docs/FEATURES.md` (rated
   feature list), `docs/ARCHITECTURE_DECISIONS.md` (frozen decisions),

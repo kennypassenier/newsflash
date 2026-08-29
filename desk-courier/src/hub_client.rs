@@ -88,7 +88,7 @@ impl HubClient {
         if response.status() == 204 {
             return Ok(None);
         }
-        let notice = response.header("mailbox-notice").map(str::to_string);
+        let notice = response.header("kyu-notice").map(str::to_string);
         let body = read_bounded(response)?;
         let message = parse_hub_response(&body).map_err(|e| HubCallError {
             status: Some(200),

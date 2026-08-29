@@ -23,7 +23,7 @@ Alternatives examined for "queue → desktop toast":
 
 | Alternative | Verdict |
 |---|---|
-| ntfy + its desktop client | Rejected: ties the house to a second hub; mailbox already rejected ntfy-style dumb push in its own Phase 1, from the other side |
+| ntfy + its desktop client | Rejected: ties the house to a second hub; kyu already rejected ntfy-style dumb push in its own Phase 1, from the other side |
 | Shell script (`curl` + `jq` + `notify-send` loop under systemd) | Genuine option, honestly weighed: ~30 lines, zero build. Rejected because it reproduces the house's documented failure class — untyped parsing that drifts (three silent format bugs in one month, study §3), no dedup, no tests, no policy bootstrap |
 | Own small binary | **Chosen (recommendation)** — typed envelope parsing, testable, dedup, one place for the shared hub-client code vault-courier would reuse |
 
@@ -67,7 +67,7 @@ every "proven by" names an existing test or a logged drill.
 - **Critic ⚔ embeds to ratify:** AR6 crash-loop amplification
   (mitigated via StartLimitBurst), AR11 critical-bypasses-DND (chosen),
   AR12 exit-code coarseness, AR16 honesty note ("expiry recorded" is
-  dashboard-visible only until hub-bridge P8 consumes mailbox.events).
+  dashboard-visible only until hub-bridge P8 consumes kyu.events).
 
 ## Deliberately not done (needs Kenny's explicit go)
 

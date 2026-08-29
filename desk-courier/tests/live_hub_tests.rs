@@ -1,7 +1,7 @@
-//! Live tests against the REAL mailbox binary (AR18): what no mock can
+//! Live tests against the REAL kyu binary (AR18): what no mock can
 //! express — lease/redelivery, dead letters, policy effect, the
 //! first-poll trap. `#[ignore]` in CI (the remote cannot build the
-//! private mailbox repo); run locally via `scripts/drill.sh`.
+//! private kyu repo); run locally via `scripts/drill.sh`.
 
 use courier_core::envelope::parse_from_hub;
 use courier_core::toast::Language;
@@ -24,10 +24,10 @@ impl Drop for ScratchHub {
     }
 }
 
-fn mailbox_bin() -> String {
-    std::env::var("MAILBOX_BIN").unwrap_or_else(|_| {
+fn kyu_bin() -> String {
+    std::env::var("KYU_BIN").unwrap_or_else(|_| {
         format!(
-            "{}/Projects/mailbox/target/release/mailbox",
+            "{}/Projects/kyu/target/release/kyu",
             std::env::var("HOME").unwrap()
         )
     })
@@ -36,13 +36,13 @@ fn mailbox_bin() -> String {
 fn start_hub(port: u16) -> ScratchHub {
     let dir = std::env::temp_dir().join(format!("dc-live-{port}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let mut child = Command::new(mailbox_bin())
-        .env("MAILBOX_LISTEN", format!("127.0.0.1:{port}"))
-        .env("MAILBOX_DATA_DIR", &dir)
+    let mut child = Command::new(kyu_bin())
+        .env("KYU_LISTEN", format!("127.0.0.1:{port}"))
+        .env("KYU_DATA_DIR", &dir)
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()
-        .expect("mailbox binary must exist for live tests (MAILBOX_BIN)");
+        .expect("kyu binary must exist for live tests (KYU_BIN)");
     let url = format!("http://127.0.0.1:{port}");
     for _ in 0..50 {
         if ureq::get(&format!("{url}/healthz")).call().is_ok() {
@@ -76,7 +76,7 @@ fn envelope(title: &str) -> String {
 }
 
 #[test]
-#[ignore = "needs the real mailbox binary; run via scripts/drill.sh"]
+#[ignore = "needs the real kyu binary; run via scripts/drill.sh"]
 fn live_s6a_publish_receive_ack_round_trip() {
     let hub = start_hub(18931);
     let client = HubClient::new(&config_for(&hub));
@@ -99,7 +99,7 @@ fn live_s6a_publish_receive_ack_round_trip() {
 }
 
 #[test]
-#[ignore = "needs the real mailbox binary; run via scripts/drill.sh"]
+#[ignore = "needs the real kyu binary; run via scripts/drill.sh"]
 fn live_k5_ar7_policy_bootstrap_is_idempotent_and_effective() {
     let hub = start_hub(18932);
     let client = HubClient::new(&config_for(&hub));
@@ -133,7 +133,7 @@ fn live_k5_ar7_policy_bootstrap_is_idempotent_and_effective() {
 }
 
 #[test]
-#[ignore = "needs the real mailbox binary; run via scripts/drill.sh"]
+#[ignore = "needs the real kyu binary; run via scripts/drill.sh"]
 fn live_k3_an_unacked_message_is_redelivered_with_a_higher_attempt() {
     let hub = start_hub(18933);
     let client = HubClient::new(&config_for(&hub));
@@ -163,7 +163,7 @@ fn live_k3_an_unacked_message_is_redelivered_with_a_higher_attempt() {
 }
 
 #[test]
-#[ignore = "needs the real mailbox binary; run via scripts/drill.sh"]
+#[ignore = "needs the real kyu binary; run via scripts/drill.sh"]
 fn live_m9_poison_lands_visibly_in_the_dead_letters() {
     let hub = start_hub(18934);
     let client = HubClient::new(&config_for(&hub));
@@ -195,7 +195,7 @@ fn live_m9_poison_lands_visibly_in_the_dead_letters() {
 }
 
 #[test]
-#[ignore = "needs the real mailbox binary; run via scripts/drill.sh"]
+#[ignore = "needs the real kyu binary; run via scripts/drill.sh"]
 fn live_ar21_unarchive_on_a_healthy_subscription_is_a_safe_noop() {
     let hub = start_hub(18935);
     let client = HubClient::new(&config_for(&hub));
@@ -211,7 +211,7 @@ fn live_ar21_unarchive_on_a_healthy_subscription_is_a_safe_noop() {
 }
 
 #[test]
-#[ignore = "needs the real mailbox binary; run via scripts/drill.sh"]
+#[ignore = "needs the real kyu binary; run via scripts/drill.sh"]
 fn live_k8_s6d_the_hub_dying_and_returning_is_survived() {
     let mut hub = start_hub(18936);
     let client = HubClient::new(&config_for(&hub));
@@ -231,9 +231,9 @@ fn live_k8_s6d_the_hub_dying_and_returning_is_survived() {
 
     // Same port, same data dir: the hub returns and the client resumes
     // where it left off (K12 recovery on the hub side).
-    let revived = Command::new(mailbox_bin())
-        .env("MAILBOX_LISTEN", "127.0.0.1:18936")
-        .env("MAILBOX_DATA_DIR", &hub.dir)
+    let revived = Command::new(kyu_bin())
+        .env("KYU_LISTEN", "127.0.0.1:18936")
+        .env("KYU_DATA_DIR", &hub.dir)
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()

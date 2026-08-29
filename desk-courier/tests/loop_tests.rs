@@ -143,7 +143,7 @@ impl TestEnv {
                 ),
             )
             .env("XDG_STATE_HOME", self.dir.join("state"))
-            .env("MAILBOX_TOKEN", TOKEN)
+            .env("KYU_TOKEN", TOKEN)
             .stdout(Stdio::null())
             .stderr(Stdio::from(journal))
             .spawn()

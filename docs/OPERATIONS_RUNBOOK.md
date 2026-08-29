@@ -20,7 +20,7 @@ clone: `git config core.hooksPath .githooks` (see README).
    `/apps` page, then store it in latch for this project:
    ```
    cd ~/Projects/hub-clients && latch init   # once
-   # put MAILBOX_TOKEN=<token> in the latch env for this project
+   # put KYU_TOKEN=<token> in the latch env for this project
    ```
    *(No latch? Fallback: put the token in
    `~/.config/desk-courier/token`, `chmod 600` it, and set `token_file`
@@ -90,8 +90,8 @@ designed behaviour — nothing crashes).
 ## R6 · Scratch hub for development (standing rule 14)
 
 ```
-MAILBOX_LISTEN=127.0.0.1:18925 MAILBOX_DATA_DIR=/tmp/dc-scratch \
-  ~/Projects/mailbox/target/release/mailbox
+KYU_LISTEN=127.0.0.1:18925 KYU_DATA_DIR=/tmp/dc-scratch \
+  ~/Projects/kyu/target/release/kyu
 ./scripts/drill.sh        # the ignored live tests against it
 ```
 The live hub on LXC 109 is never touched by development — only as an

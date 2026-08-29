@@ -1,5 +1,5 @@
 # Standing rule 7: pin the toolchain so the local gate and CI judge with
-# the same clippy (the mailbox 1.97-vs-1.98 drift is the precedent).
+# the same clippy (the kyu 1.97-vs-1.98 drift is the precedent).
 [toolchain]
 channel = "1.97.1"
 components = ["rustfmt", "clippy"]

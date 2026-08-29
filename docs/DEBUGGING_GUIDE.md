@@ -39,7 +39,7 @@ strings from `run.rs`/`logx.rs`.
 |---|---|---|
 | journal: `…: past the 10min TTL client-side … acked unrendered` | claimed right before a suspend, rendered after resume | by design (S4); nothing to fix |
 | journal: `…: poison (…) — dead-lettered. Remedy: …` + hub dead letters | payload is not a valid v1 envelope | fix the producer; Requeue on the dashboard after |
-| hub metrics `state="expired"` / `mailbox.events` `message.expired` | courier was down longer than the TTL | by design (S4) — the expiry is the record |
+| hub metrics `state="expired"` / `kyu.events` `message.expired` | courier was down longer than the TTL | by design (S4) — the expiry is the record |
 | journal: `…: redelivery of a seen id — acked silently` | at-least-once redelivery of an already-shown toast | by design (K4); the toast appeared the first time |
 
 ### Toast content looks wrong
@@ -61,10 +61,10 @@ permissions of `~/.local/state/desk-courier/`.
 ## Poking the hub directly
 
 ```
-curl -H "authorization: Bearer $MAILBOX_TOKEN" \
+curl -H "authorization: Bearer $KYU_TOKEN" \
   "http://10.10.10.9:8080/api/t/notify.kenny/subs/desktop/policy"
-curl -H "authorization: Bearer $MAILBOX_TOKEN" \
+curl -H "authorization: Bearer $KYU_TOKEN" \
   "http://10.10.10.9:8080/api/t/notify.kenny/subs/desktop/dead"
 ```
-The hub's own USER_GUIDE (`~/Projects/mailbox/docs/USER_GUIDE.md`) is
+The hub's own USER_GUIDE (`~/Projects/kyu/docs/USER_GUIDE.md`) is
 the authority on those endpoints.

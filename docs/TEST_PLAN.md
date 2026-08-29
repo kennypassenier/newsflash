@@ -17,7 +17,7 @@ and every accepted limitation.
 | `mock_hub_tests` (7) | `cargo test`, CI | Request shapes on the wire (URLs, auth header, one-field policy PUT), against the **captured** real `envelope=json` response — the mock serves drill evidence, not fiction (AR18); plus the K9 plaintext scan spawning the real binary |
 | `render_tests` (1 sweep) | `cargo test`, CI | Subprocess argv per priority, `--` separator, escape, failure and timeout branches, daemon probe, detached chime (AR12/AR19/AR22) |
 | `loop_tests` (6) | `cargo test`, CI | The REAL binary against a scripted mock hub: archived→unarchive→resume, auth-rejected naming + remedy + no token in output, hold-without-consuming while the daemon is absent, exactly one render across a SIGKILL + redelivery (S6b), render-failure→nack+re-probe, SIGTERM settle + the journal lifecycle lines (M4/M11) |
-| `live_hub_tests` (6, `#[ignore]`) | `scripts/drill.sh`, local | What no mock can express, against the real mailbox binary: publish/receive/ack round-trip, policy bootstrap effect + read-back, redelivery with attempt count, poison → visible dead letter, unarchive no-op, hub dying and returning mid-run (K8/S6d) |
+| `live_hub_tests` (6, `#[ignore]`) | `scripts/drill.sh`, local | What no mock can express, against the real kyu binary: publish/receive/ack round-trip, policy bootstrap effect + read-back, redelivery with attempt count, poison → visible dead letter, unarchive no-op, hub dying and returning mid-run (K8/S6d) |
 | Manual drills | logged in `docs/DRILL_LOG.md` | Real-desktop rendering (Plasma), S6c end-to-end TTL expiry with the courier down, systemd unit verify, latch-under-systemd, M7 restore-from-zero |
 
 ## What each fake cannot express (AR18, standing rule 9)
@@ -25,7 +25,7 @@ and every accepted limitation.
 - **PATH shims** cannot prove a daemon displays anything → real-desktop
   drill (DRILL_LOG, S6a).
 - **The scripted mock hub** cannot prove lease/redelivery/TTL/archive
-  semantics → live tests against the real mailbox binary.
+  semantics → live tests against the real kyu binary.
 - **The live scratch hub** cannot prove behaviour of the *live* hub's
   token door (scratch runs open) → the auth path is mock-proven (401
   classification, header shape) and the real token flow is part of
@@ -69,7 +69,7 @@ topic/subscription refused, ttl overflow refused), G11-part
 
 **Later, by decision (not covered — recorded consciously):**
 - **G10** S6c as an automated live test — the manual drill (metrics +
-  `mailbox.events` + no toast) is strong evidence; an automated variant
+  `kyu.events` + no toast) is strong evidence; an automated variant
   costs 1–2 min per run. Revisit if the TTL path ever regresses.
 - **G13** "published mid-poll arrives at once" — hub-owned behaviour,
   hub-tested (`l2_a_message_published_mid_poll_arrives_at_once`).

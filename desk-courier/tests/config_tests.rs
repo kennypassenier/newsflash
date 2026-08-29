@@ -13,12 +13,12 @@ fn write_config(name: &str, contents: &str) -> PathBuf {
 }
 
 /// All env-sensitive cases in ONE test: tests share the process
-/// environment, so MAILBOX_TOKEN mutations must not run in parallel.
+/// environment, so KYU_TOKEN mutations must not run in parallel.
 #[test]
 fn m2_ar10_config_validation_names_field_and_remedy() {
     // SAFETY (test-only): single-threaded within this test; no other
-    // test in this binary touches MAILBOX_TOKEN.
-    unsafe { std::env::remove_var("MAILBOX_TOKEN") };
+    // test in this binary touches KYU_TOKEN.
+    unsafe { std::env::remove_var("KYU_TOKEN") };
 
     // Missing file → remedy mentions the example.
     let err = config::load(&PathBuf::from("/nonexistent/nope.toml")).unwrap_err();
@@ -79,18 +79,18 @@ fn m2_ar10_config_validation_names_field_and_remedy() {
     assert!(err.contains("latch") && err.contains("/apps"), "{err}");
 
     // Empty env token is its own error (critic on AR10).
-    unsafe { std::env::set_var("MAILBOX_TOKEN", "  ") };
+    unsafe { std::env::set_var("KYU_TOKEN", "  ") };
     let err = config::load(&p).unwrap_err();
     assert!(err.contains("empty"), "{err}");
 
     // A real env token wins and the defaults land.
-    unsafe { std::env::set_var("MAILBOX_TOKEN", "tok-123") };
+    unsafe { std::env::set_var("KYU_TOKEN", "tok-123") };
     let cfg = config::load(&p).unwrap();
     assert_eq!(cfg.token, "tok-123");
     assert_eq!(cfg.topic, "notify.kenny");
     assert_eq!(cfg.subscription, "desktop");
     assert_eq!(cfg.ttl_ms, 600_000);
-    unsafe { std::env::remove_var("MAILBOX_TOKEN") };
+    unsafe { std::env::remove_var("KYU_TOKEN") };
 
     // token_file: group/other-readable refused with the chmod remedy.
     #[cfg(unix)]

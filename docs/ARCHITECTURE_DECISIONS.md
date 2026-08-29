@@ -11,10 +11,10 @@ ratification go through mini-rounds only.
 ## Phase 3 — tech choice
 
 ### AR1 · Language & toolchain: Rust, pinned 1.97.1
-Rust — the house language for hub consumers (mailbox, latch, homelab
+Rust — the house language for hub consumers (kyu, latch, homelab
 are all Rust). Toolchain pinned in `rust-toolchain.toml` at **1.97.1**
 (the version installed on the PC) and CI asks for exactly that
-(standing rule 7 — the mailbox 1.97-vs-1.98 clippy drift is the
+(standing rule 7 — the kyu 1.97-vs-1.98 clippy drift is the
 precedent). Edition 2024.
 
 ### AR2 · Dependency policy: reluctant, no async runtime
@@ -23,7 +23,7 @@ runtime buys nothing. Blocking HTTP via **ureq**, JSON via
 **serde/serde_json**, config via **toml**, signals via **signal-hook**.
 No tokio, no reqwest, no anyhow/thiserror (hand-rolled error enums in a
 codebase this size). Plain HTTP only — the hub is LAN-only by design
-(mailbox N3), so no TLS stack ships at all. A blocking stack lives or
+(kyu N3), so no TLS stack ships at all. A blocking stack lives or
 dies by its timeouts: **AR19 is part of this decision**, not an
 implementation detail.
 
@@ -58,7 +58,7 @@ before spawn — summary to 200 chars, body to 1000 (AR11). A
 pipeline-v2 schema change is a mini-round trigger (SCOPE S7).
 
 ### AR5 · At-least-once handling: the settle table, keyed by hub id
-**The settle/dedup key is the HUB message id** (`mailbox-id` /
+**The settle/dedup key is the HUB message id** (`kyu-id` /
 envelope-response `id`) — never the payload envelope's `id` (critic,
 blocking): redelivery is a hub-level event reusing the hub id; a
 poison payload has no parseable id at all yet must still be nacked by
@@ -152,7 +152,7 @@ not impersonate designed degradation):
   own quiet "waiting" log line, plain backoff.
 
 ### AR10 · Token handling: environment first, never inline
-Token source order: `MAILBOX_TOKEN` env var (what `latch run` injects
+Token source order: `KYU_TOKEN` env var (what `latch run` injects
 — M6), else a `token_file` path from config (0600, checked once at
 startup — the TOCTOU race is deliberately not hardened further: a
 racer on this single-admin machine already owns the account). Present
@@ -224,7 +224,7 @@ changes behaviour (SCOPE S10, study §7 doctrine, verbatim). The
 critic's corollary is embedded across AR9/AR21/AR22: the doctrine
 makes *silent* failures look like *designed* degradation, which is why
 every failure class gets its own named, logged state. Honesty note
-(critic): S4's "expiry recorded" means published to `mailbox.events`,
+(critic): S4's "expiry recorded" means published to `kyu.events`,
 which nothing consumes until hub-bridge P8 ships — recorded, but only
 dashboard-visible today.
 
@@ -241,13 +241,13 @@ knobs.
   anything — covered by a live desktop drill per relevant milestone.
 - **Mock hub** proves request shapes and error branches. Its
   `envelope=json` body is **not invented**: the mock serves a pinned
-  vector captured from the real mailbox binary during the L2 drill
+  vector captured from the real kyu binary during the L2 drill
   (critic: the guide never documents that shape; a guessed mock would
   green-light fiction for months). *Cannot express:* real
   lease/redelivery/TTL/dead-letter/archive semantics — covered by
   live tests (`#[ignore]`, run by `scripts/drill.sh`) against the real
-  mailbox binary (`MAILBOX_BIN`, default
-  `~/Projects/mailbox/target/release/mailbox`) on a scratch data dir
+  kyu binary (`KYU_BIN`, default
+  `~/Projects/kyu/target/release/kyu`) on a scratch data dir
   and port. CI runs the mock suite; drills run locally and their
   output is milestone-report evidence.
 - **Named drills no fake can express:** latch-under-systemd (AR10),

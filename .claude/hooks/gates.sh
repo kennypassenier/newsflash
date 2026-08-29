@@ -2,7 +2,7 @@
 # hub-clients quality gates (standing rules 6/7): format, lint with
 # warnings as errors, full test suite, the AR3 core I/O boundary, and
 # the tree-change check (a gate that rewrites the tree while running —
-# e.g. cargo touching Cargo.lock after git add — must fail, mailbox
+# e.g. cargo touching Cargo.lock after git add — must fail, kyu
 # retro 2026-08-28). Called by .githooks/pre-commit and
 # .claude/hooks/check-commit.sh; non-zero exit blocks the commit.
 set -euo pipefail

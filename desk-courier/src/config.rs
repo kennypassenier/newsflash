@@ -59,7 +59,7 @@ pub fn load(path: &Path) -> Result<Config, String> {
     if raw.token.is_some() {
         return Err(
             "config contains an inline token. Secrets never live in the config file (AR10): \
-             remove the token key and provide MAILBOX_TOKEN via latch run, or point token_file \
+             remove the token key and provide KYU_TOKEN via latch run, or point token_file \
              at a 0600 file."
                 .to_string(),
         );
@@ -72,7 +72,7 @@ pub fn load(path: &Path) -> Result<Config, String> {
     if !hub_url.starts_with("http://") {
         return Err(format!(
             "hub_url {hub_url:?} must start with http:// — the hub speaks plain HTTP on the LAN \
-             (mailbox N3); desk-courier deliberately ships no TLS stack (AR2)."
+             (kyu N3); desk-courier deliberately ships no TLS stack (AR2)."
         ));
     }
 
@@ -140,14 +140,14 @@ pub fn load(path: &Path) -> Result<Config, String> {
     })
 }
 
-/// AR10 order: MAILBOX_TOKEN env (latch-injected) first, then
+/// AR10 order: KYU_TOKEN env (latch-injected) first, then
 /// token_file (0600, checked once — deliberately no TOCTOU hardening
 /// on a single-admin machine).
 fn resolve_token(token_file: Option<&str>) -> Result<String, String> {
-    match std::env::var("MAILBOX_TOKEN") {
+    match std::env::var("KYU_TOKEN") {
         Ok(v) if v.trim().is_empty() => {
             return Err(
-                "MAILBOX_TOKEN is set but empty. Fix the latch secret or unset the variable \
+                "KYU_TOKEN is set but empty. Fix the latch secret or unset the variable \
                  to fall back to token_file."
                     .to_string(),
             );
@@ -157,7 +157,7 @@ fn resolve_token(token_file: Option<&str>) -> Result<String, String> {
     }
     let Some(path) = token_file else {
         return Err(
-            "no token available. Set MAILBOX_TOKEN (latch run -- desk-courier) or set \
+            "no token available. Set KYU_TOKEN (latch run -- desk-courier) or set \
              token_file in the config to a 0600 file holding the app token from the hub's \
              /apps page."
                 .to_string(),

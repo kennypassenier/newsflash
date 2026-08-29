@@ -1,4 +1,4 @@
-//! desk-courier — renders messages from the mailbox hub's
+//! desk-courier — renders messages from the kyu hub's
 //! `notify.kenny` topic as desktop toasts. See docs/SCOPE.md.
 
 use desk_courier::{config, logx, run, send_test};

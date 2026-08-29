@@ -1,8 +1,8 @@
 # desk-courier configuration — copy to ~/.config/desk-courier/config.toml
-# The token is NOT configured here (AR10): it arrives as MAILBOX_TOKEN
+# The token is NOT configured here (AR10): it arrives as KYU_TOKEN
 # via `latch run` (see the systemd unit), or via token_file below.
 
-# The mailbox hub. Live hub: "http://10.10.10.9:8080" — during
+# The kyu hub. Live hub: "http://10.10.10.9:8080" — during
 # development always a scratch hub (SCOPE S11c).
 hub_url = "http://127.0.0.1:8080"
 
@@ -22,6 +22,6 @@ hub_url = "http://127.0.0.1:8080"
 # cyberpunk-soft, never metallic. Omit for silence.
 #sound_file = "/home/kenny/Music/chimes/soft-ping.ogg"
 
-# Fallback token source when MAILBOX_TOKEN is not set: a file holding
+# Fallback token source when KYU_TOKEN is not set: a file holding
 # the app token from the hub's /apps page. Must be chmod 600.
 #token_file = "/home/kenny/.config/desk-courier/token"

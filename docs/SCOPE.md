@@ -5,8 +5,8 @@ item below reflects Kenny's actual answer, not the draft. Frozen except
 through a mini-round (`FORM_PROTOCOL.md` §5) once later phases are under
 way.
 
-Bootstrapped from the Mailbox Integration Study
-(`ObsidianVault/Home Assistant/Documentation/Mailbox Integration Study.md`,
+Bootstrapped from the Kyu Integration Study
+(`ObsidianVault/Home Assistant/Documentation/Kyu Integration Study.md`,
 §5.P3, §5.P2, §7, §8b), where desk-courier (P3) was rated **Essential**
 and vault-courier (P2) **Desired** on 2026-08-28.
 
@@ -23,7 +23,7 @@ tag covers the workspace.
 ## Mission (S2)
 
 `desk-courier` runs on Kenny's Garuda PC, long-polls subscription
-`desktop` on topic `notify.kenny` at the mailbox hub, and renders each
+`desktop` on topic `notify.kenny` at the kyu hub, and renders each
 message as a desktop toast via `notify-send`. After a successful toast
 the message is acked; a failed render leaves it unacked so the hub
 redelivers.
@@ -49,7 +49,7 @@ defaults on or off is a Phase 2 decision.
 The `desktop` subscription carries a policy with a **TTL of 10
 minutes**: a toast about a doorbell an hour ago is noise. After a day
 logged out, the backlog expires at the hub side — **recorded** (the hub
-counts and reports expiries via `mailbox.events`), never silent — and
+counts and reports expiries via `kyu.events`), never silent — and
 login greets you with zero stale toasts. The exact value is a Phase 2/4
 detail; the scope statement is: short TTL, expiry visible, never a pile.
 
@@ -85,7 +85,7 @@ Each of these must end up test-proven:
 - The **pipeline-v2 project owns the final envelope schema** (its
   Phase 4). A schema change there is a **mini-round trigger** here,
   never a silent adjustment.
-- Toward the hub, `~/Projects/mailbox/docs/USER_GUIDE.md` is the
+- Toward the hub, `~/Projects/kyu/docs/USER_GUIDE.md` is the
   interface authority (K2 receive, K3 ack, K7 policy, W2 tokens).
 
 ## Non-goals
@@ -100,7 +100,7 @@ Each of these must end up test-proven:
   renders what arrives on its subscription and decides nothing about
   who gets what. Routing is upstream: the topic name is the address
   (`notify.kenny` ≠ `notify.parents`), the HA dispatcher picks the
-  topic, and the hub itself never routes or transforms (mailbox N5).
+  topic, and the hub itself never routes or transforms (kyu N5).
 - **Never a critical path (S10).** desk-courier is an *extra* channel,
   never a link something else waits on. Hub down or courier dead = no
   toasts, and nothing else changes: push, TTS and the todo fallback
@@ -117,7 +117,7 @@ Each of these must end up test-proven:
   page. How the binary obtains its token (latch or otherwise) is the
   Phase 2 ecosystem item.
 - **Scratch hub:** development runs against a scratch hub (local
-  mailbox binary or docker compose on the PC). The live hub on LXC 109
+  kyu binary or docker compose on the PC). The live hub on LXC 109
   (`http://10.10.10.9:8080`) is only touched as an explicitly agreed
   step.
 - **Test envelopes:** until pipeline-v2's shadow-publish (6a) is live,
@@ -130,8 +130,8 @@ Greenfield round, 2026-08-28 (AFK — recommendation built, ratification
 queued in `docs/AFK_QUEUE.md` R1):
 
 - **ntfy + its desktop client** — rejected. Ties the house to a second
-  hub; mailbox's own Phase 1 already rejected ntfy-style dumb push from
-  the other side. The hub of record is mailbox (ECOSYSTEM.md).
+  hub; kyu's own Phase 1 already rejected ntfy-style dumb push from
+  the other side. The hub of record is kyu (ECOSYSTEM.md).
 - **Shell script** (`curl` + `jq` + `notify-send` loop under systemd) —
   the honest cheap option: ~30 lines, zero build. Rejected because it
   reproduces the house's documented failure class: untyped parsing that
@@ -141,6 +141,6 @@ queued in `docs/AFK_QUEUE.md` R1):
   regression vectors, testable, dedup, and one home for the hub-client
   code a later vault-courier would reuse.
 
-Ecosystem consult (Phase 1 mandatory): **mailbox** is the counterparty
+Ecosystem consult (Phase 1 mandatory): **kyu** is the counterparty
 by definition; **latch** is the token-injection candidate (Phase 2 item
 M6); **homelab** does not apply (this runs on the PC, not an LXC).
