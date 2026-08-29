@@ -56,9 +56,9 @@ topic/subscription refused, ttl overflow refused), G11-part
 (`send-test --priority` validated).
 
 **Accepted as known limitation:**
-- **K7 runtime verification** — the unit is build-verified
-  (`systemd-analyze` clean) but not runtime-verified until Kenny
-  enables it; runbook R1 is the checklist for that step (G14).
+- ~~K7 runtime verification~~ — **closed 2026-08-30**: unit enabled,
+  live-hub policy asserted and read back, dogfood toast rendered
+  through the running service (DRILL_LOG).
 - **Second-SIGTERM abort path** untested (registration order is the
   documented signal-hook pattern; failure mode is a bounded stop
   timeout, not data loss) (G6-part).

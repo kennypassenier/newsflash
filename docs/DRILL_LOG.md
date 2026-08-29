@@ -65,3 +65,21 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   end-to-end (latch project + real `KYU_TOKEN` secret + enabled
   unit) waits for Kenny: token minting on the live hub's /apps page is
   queued (AFK queue, "Deliberately not done").
+
+## 2026-08-30 · Deployment + dogfood (Phase 9)
+
+- Kenny allowed `ssh pve` via `settings.local.json`; the app token was
+  minted ON LXC 109 (the hub's master token never left that machine)
+  and flowed straight into `.env` → `latch commit && latch push`
+  (`latch run` injects `KYU_TOKEN`, length 48 — value never displayed).
+- `systemctl --user enable --now desk-courier`: active, enabled.
+- First contact with the LIVE hub behaved exactly as frozen: policy
+  asserted (`effective.ttl_ms=600000` read back, lease/attempts still
+  tracking hub defaults), and the cold-start replay found a backlog of
+  retained envelopes on `notify.kenny` — every one **acked unrendered
+  as stale** (journal lines), zero stale toasts. S4 held on its very
+  first real run.
+- Dogfood (Phase 9 rule): `latch run -- desk-courier send-test` →
+  `rendered 01M17T391XRY5R3V2N40BQXRAW` — the first real toast from the
+  live hub, on the real desktop, through the enabled unit. **K7 is now
+  runtime-verified**, closing the build-vs-runtime gap from TEST_PLAN.
