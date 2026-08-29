@@ -83,3 +83,21 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   `rendered 01M17T391XRY5R3V2N40BQXRAW` — the first real toast from the
   live hub, on the real desktop, through the enabled unit. **K7 is now
   runtime-verified**, closing the build-vs-runtime gap from TEST_PLAN.
+
+## 2026-08-30 · Rename mini-round — desk-courier → newsflash
+
+- Full sweep verified before the switch: 62 tests + all 6 live drills
+  green post-rename (source, package, systemd unit, docs).
+- Live cutover: old unit stopped, disabled, removed; new binary
+  installed (`~/.cargo/bin/newsflash`); config AND the dedup store
+  (`seen.json`) migrated to the new paths (no dedup-history loss, so
+  no duplicate-toast risk on the next redelivery); new unit installed,
+  enabled, started — `journalctl` shows the clean startup line under
+  the new name.
+- Dogfood repeated under the new name: `newsflash send-test` →
+  `rendered 01M17WYFNS48Y7XENT7WV86V1X` — a real toast, new binary,
+  same live hub.
+- Read-back (rule 13a habit, applied to a local system too): every old
+  artifact (`~/.cargo/bin/desk-courier`, `~/.config/desk-courier/`,
+  `~/.local/state/desk-courier/`, the old unit file) confirmed absent
+  after cleanup — zero stragglers.
