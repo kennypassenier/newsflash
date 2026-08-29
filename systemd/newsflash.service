@@ -24,7 +24,7 @@ Type=simple
 # 2026-08-29), so point it at the linked repo.
 # Fallback without latch: replace ExecStart with the plain binary and
 # add: EnvironmentFile=%h/.config/newsflash/token.env
-WorkingDirectory=%h/Projects/hub-clients
+WorkingDirectory=%h/Projects/newsflash
 ExecStart=%h/.cargo/bin/latch run -- %h/.cargo/bin/newsflash
 Restart=on-failure
 RestartSec=5

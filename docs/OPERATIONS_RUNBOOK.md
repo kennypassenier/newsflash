@@ -8,7 +8,7 @@ clone: `git config core.hooksPath .githooks` (see README).
 
 1. Build and install the binary:
    ```
-   cd ~/Projects/hub-clients && cargo install --path newsflash
+   cd ~/Projects/newsflash && cargo install --path newsflash
    ```
 2. Config:
    ```
@@ -19,7 +19,7 @@ clone: `git config core.hooksPath .githooks` (see README).
 3. Token (M6): mint an app token named `newsflash` on the hub's
    `/apps` page, then store it in latch for this project:
    ```
-   cd ~/Projects/hub-clients && latch init   # once
+   cd ~/Projects/newsflash && latch init   # once
    # put KYU_TOKEN=<token> in the latch env for this project
    ```
    *(No latch? Fallback: put the token in
@@ -44,7 +44,7 @@ enabling the unit is deployment — AFK queue).
 
 ## R2 · Update (M5 — no self-update, by decision)
 
-1. `cd ~/Projects/hub-clients && git pull`
+1. `cd ~/Projects/newsflash && git pull`
 2. `cargo install --path newsflash`
 3. `systemctl --user restart newsflash`
 4. `journalctl --user -u newsflash -n 3` — the startup summary line
@@ -57,7 +57,7 @@ one copy), token (lives in latch, rides latch's own escrow), dedup
 cache (throwaway — worst case one duplicate toast). Therefore:
 
 1. Clone the repo, activate hooks:
-   `git clone <repo> ~/Projects/hub-clients && cd ~/Projects/hub-clients && git config core.hooksPath .githooks`
+   `git clone <repo> ~/Projects/newsflash && cd ~/Projects/newsflash && git config core.hooksPath .githooks`
 2. Run R1. Done — there is nothing else to restore, by design.
 
 Drilled 2026-08-29: clean clone → release build → live publish against

@@ -1,4 +1,4 @@
-# Scope — hub-clients
+# Scope — newsflash
 
 Phase 0 output. Approved via the Phase 0 gate form on 2026-08-28 — every
 item below reflects Kenny's actual answer, not the draft. Frozen except
@@ -10,7 +10,7 @@ Bootstrapped from the Kyu Integration Study
 §5.P3, §5.P2, §7, §8b), where newsflash (P3) was rated **Essential**
 and vault-courier (P2) **Desired** on 2026-08-28.
 
-## Repo structure (S1 — decided)
+## Repo structure (S1 — decided, amended)
 
 **One workspace repo** (`~/Projects/hub-clients`) holding the consumer
 binaries that run on Kenny's PC. First binary: `newsflash`. The two
@@ -19,6 +19,19 @@ client (long-poll, ack, retry), token handling, the systemd user-service
 pattern — so one repo means one CI, one hook set, one procedure
 administration. Trade-off accepted: one version number and one release
 tag covers the workspace.
+
+**Amendment 2026-08-30 (mini-round).** After the naming mini-round
+(`desk-courier` → `newsflash`), Kenny split the workspace: `newsflash`
+(with `courier-core`) moved into its own repo, `~/Projects/newsflash`
+— this repo. The old `~/Projects/hub-clients` was deleted (GitHub +
+local), history kept intact via a full clone before deletion, per
+Kenny's explicit choice. `courier-core` stays newsflash's internal
+base rather than a cross-repo shared library: vault-courier's own
+existence is still uncertain (see the non-goal below), so no
+sharing structure was built for a consumer that may never exist — if
+vault-courier is ever pursued, its own Phase 0/1 decides fresh how
+(or whether) to reuse this code. This repo is therefore no longer a
+multi-binary workspace; the "workspace" framing above is historical.
 
 ## Mission (S2)
 

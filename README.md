@@ -1,26 +1,20 @@
-# hub-clients
+# newsflash
 
-Consumer binaries for the [kyu](../kyu) message hub that run on
-Kenny's PC as systemd **user** services.
-
-> **Renamed 2026-08-30** (mini-round): `desk-courier` → **newsflash**.
-> Same binary, same behaviour — Kenny picked a name that puns on the
-> `cue`/`queue`/`kyu` chain and the news-bulletin nature of a toast.
-> One sweep commit (binary, unit, config/state paths, docs, live
-> deployment) is the whole change; see `docs/REALIZATION_PLAN.md`
-> gate log.
-
-**newsflash** — long-polls subscription `desktop` on topic
-`notify.kenny` and renders each message as a desktop toast via
+A consumer for the [kyu](../kyu) message hub that runs on Kenny's PC
+as a systemd **user** service: long-polls subscription `desktop` on
+topic `notify.kenny` and renders each message as a desktop toast via
 `notify-send`, with an optional soft chime. Messages older than the
 subscription's 10-minute TTL expire at the hub — recorded, never
 silent — so a day logged out never greets you with a pile of stale
-toasts. The courier is an extra notification channel, never a critical
-path: every failure mode degrades to exactly "no toasts".
+toasts. It is an extra notification channel, never a critical path:
+every failure mode degrades to exactly "no toasts".
 
-*(vault-courier, a second consumer appending house events to the
-Obsidian vault, may join this workspace later through its own gate —
-decision pending.)*
+> **History.** Built 2026-08-28 → 2026-08-30 as `desk-courier` in the
+> `hub-clients` workspace repo; renamed to **newsflash** the same day
+> (mini-round, see `docs/REALIZATION_PLAN.md` gate log). On
+> 2026-08-30 Kenny split it into its own repo — this one — and
+> retired `hub-clients` (deleted, history kept in this repo's log).
+> Full build/architecture/hardening record: `docs/`.
 
 ## Quick start
 
