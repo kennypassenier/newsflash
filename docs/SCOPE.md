@@ -26,12 +26,11 @@ tag covers the workspace.
 — this repo. The old `~/Projects/hub-clients` was deleted (GitHub +
 local), history kept intact via a full clone before deletion, per
 Kenny's explicit choice. `courier-core` stays newsflash's internal
-base rather than a cross-repo shared library: vault-courier's own
-existence is still uncertain (see the non-goal below), so no
-sharing structure was built for a consumer that may never exist — if
-vault-courier is ever pursued, its own Phase 0/1 decides fresh how
-(or whether) to reuse this code. This repo is therefore no longer a
-multi-binary workspace; the "workspace" framing above is historical.
+base rather than a cross-repo shared library — no sharing structure
+was built for a hypothetical consumer, and S8 below closed that
+question for good the same day anyway. This repo is therefore no
+longer a multi-binary workspace; the "workspace" framing above is
+historical.
 
 ## Mission (S2)
 
@@ -103,12 +102,13 @@ Each of these must end up test-proven:
 
 ## Non-goals
 
-- **Vault-courier is not built now (S8).** No code, no half work. It
-  would come later through its own gate, expected in this repo. Kenny's
-  note on the gate form (2026-08-28): *he is not yet sure it will come
-  at all — the usefulness is still unproven to him.* Design nothing
-  speculative for it; shared code is factored for newsflash's needs
-  only.
+- **Vault-courier will not be built (S8, closed 2026-08-30).** Kenny's
+  note on the Phase 0 gate form (2026-08-28) recorded him unsure it
+  would ever happen; on 2026-08-30 he closed the question outright:
+  *"vault-courier is nu officieel dood, ik wil het niet."* No code, no
+  gate, no reserved slot — the door is shut, not left ajar. If house
+  events ever need writing into the Obsidian vault, that is a fresh
+  idea in its own future conversation, not a resurrection of this one.
 - **No routing or audience logic in the client (S9).** newsflash
   renders what arrives on its subscription and decides nothing about
   who gets what. Routing is upstream: the topic name is the address

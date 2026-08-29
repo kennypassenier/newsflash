@@ -7,9 +7,8 @@ is queued (`docs/AFK_QUEUE.md` R2). IDs are permanent: they appear in
 commits, test names, docs and forms from here on. Changes after
 ratification go through mini-rounds only (`FORM_PROTOCOL.md` §5).
 
-All features are newsflash's. vault-courier gets its own feature
-round if and when its gate opens (SCOPE non-goal S8 — existence itself
-still uncertain).
+All features are newsflash's. There is no vault-courier — Kenny closed
+that idea for good on 2026-08-30 (SCOPE non-goal S8).
 
 ## Round 1 — from Kenny's scope answers and the study
 

@@ -33,10 +33,6 @@ not urgent), policy asserted on the live hub.
   `actions` field on the envelope, default "Gelezen"/"Snooze" buttons,
   click flows back as an `action_result` envelope to
   `notify.actions`. See `docs/FEATURES.md` M10 amendment.
-- **vault-courier** — only if Kenny ever wants it; he doubts its
-  usefulness (see `docs/SCOPE.md` non-goals). No longer has a
-  reserved home (the `hub-clients` workspace was retired); if pursued,
-  it gets its own fresh Phase 0.
 - **Envelope v2 mini-round** when pipeline-v2 freezes its final
   schema (the pinned v1 vector test is the tripwire).
 - Chime file for K6 (sound is off until Kenny picks one).
