@@ -1,0 +1,13 @@
+# .latchignore — which files latch may NOT pick up (gitignore format).
+#
+# latch deliberately does NOT read .gitignore: your .env belongs there,
+# and latch still has to find it. This file is the latch-only equivalent.
+#
+# Always skipped, no rule needed:
+#   .git  .latch  node_modules  target  vendor  .venv  venv
+# Undo one of those with a negation, e.g.:
+#   !vendor/
+#
+# Examples:
+#   fixtures/          # never look in this directory
+#   .env.local         # never pick up this file

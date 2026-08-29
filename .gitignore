@@ -1,2 +1,6 @@
 /target
 **/*.rs.bk
+# latch working copies — secrets never in git (standing rule 10)
+.env
+.env.*
+!.env.example
