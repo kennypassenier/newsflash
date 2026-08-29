@@ -53,6 +53,6 @@ still uncertain).
 
 ## Freeze
 
-**Provisionally frozen 2026-08-29 for the AFK build.** Real freeze is
-Kenny's, via ratification round R2. Anything he re-rates is a mini-round
-against the built state.
+**Frozen 2026-08-29** — ratified by Kenny (ratification form F2,
+Akkoord, same day; M5/M6/M7 decisions ratified as F3/F4/F5, the K6
+default-off as F6). Changes from here go through mini-rounds only.

@@ -1,11 +1,17 @@
 # AFK queue
 
+**CLOSED 2026-08-29:** Kenny returned and ratified every round below in
+one form (F1–F18 all Akkoord/Goedkeuren; outcome logged in
+REALIZATION_PLAN's gate log). Follow-ups he chose: GitHub repo +
+protection by Claude (F19), token minting by Kenny (F20), unit enable
+by Claude after that (F21), Phase 9 preparation (F22). Kept for the
+paper trail.
+
 Kenny went AFK at the Phase 0 gate (2026-08-28) with the instruction:
 *"develop al zoveel mogelijk gebaseerd op deze antwoorden."* Per
-PROCEDURE's AFK rule (L2), work continues along the recommended choices;
-every gate that normally needs him is queued here as a **ratification
-round** ("the gate becomes a ratification mini-round" — PROCEDURE ground
-rules). **This file is the first thing to present when he returns.**
+PROCEDURE's AFK rule (L2), work continued along the recommended
+choices; every gate that normally needed him was queued here as a
+**ratification round**.
 
 ## Pending ratification rounds (in order)
 

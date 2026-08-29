@@ -16,16 +16,15 @@ gates hold from any session or terminal. After a fresh clone, run:
 
 | Field | Value |
 |---|---|
-| Current phase | 8 done (AFK-provisional) — awaiting ratification, then Phase 9 |
-| Last completed gate | Phase 0 (2026-08-28, Kenny's form answers); phases 1–8 built AFK along recommendations 2026-08-29 |
-| Next gate | **docs/AFK_QUEUE.md — present FIRST on Kenny's return** (R1–R6 ratification rounds as forms), then Phase 9 tag & release (always Kenny's go) |
-| AFK mode | **ON** since 2026-08-28 ("develop al zoveel mogelijk gebaseerd op deze antwoorden") |
+| Current phase | 9 · Release & lifecycle (preparation) |
+| Last completed gate | AFK ratification 2026-08-29: F1–F18 all ratified; freezes definitive |
+| Next gate | Phase 9 report form ending in "Tag & release?" — after the dogfood run (= first real toast from the live hub once F20/F21 land) |
+| AFK mode | off since 2026-08-29 |
 
-State in one line: 62 automated tests + 6 live drill tests green, S6a–d
-drilled on the real desktop against a scratch hub, hardening + docs
-done; NOT done (needs Kenny): GitHub remote + branch protection, app
-token on the live hub + latch project, enabling the systemd unit,
-ratification forms, release.
+Open follow-ups: F20 Kenny mints the `desk-courier` app token on the
+live hub `/apps` page and reports back → then Claude does `latch init`
++ secret + unit enable + send-test verification (F21, agreed), then the
+Phase 9 gate. GitHub repo/protection: see README + gate log.
 
 **AFK rule in force:** phases 1–8 run along the recommended choices;
 every gate that normally needs Kenny becomes a ratification round in

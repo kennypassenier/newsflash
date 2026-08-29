@@ -304,7 +304,9 @@ the normal startup.
 
 ## Freeze
 
-**Provisionally frozen 2026-08-29 for the AFK build**, after the
-architecture-critic round (BLOCKING findings incorporated, SERIOUS
-findings adopted as marked, ⚔ objections embedded). Real freeze is
-Kenny's, via ratification round R3.
+**Frozen 2026-08-29** — built after the architecture-critic round
+(BLOCKING findings incorporated, SERIOUS findings adopted as marked,
+⚔ objections embedded) and ratified by Kenny the same day
+(ratification form F7, with the S6b id-sharpening as F8 and the
+cold-start amendment as F9, all Akkoord). Changes from here go through
+mini-rounds only.
