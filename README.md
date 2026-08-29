@@ -40,6 +40,12 @@ Without it, commits skip the gates (fmt, clippy warnings-as-errors,
 full test suite, core I/O boundary, tree-change check) and the
 commit-message ID rule. CI re-runs the same gates on every push.
 
+Branch protection on `main` requires the `gates` check, up to date,
+with no bypass (admins included) — so a direct push of an unverified
+commit is refused. The daily flow: push your commit to a side branch
+first (`git push origin main:ci-verify`), wait for green, then push
+`main` — the same commit now carries a green check and is accepted.
+
 ## Development
 
 - `cargo test --all` — unit + mock-hub tests (CI-safe).
