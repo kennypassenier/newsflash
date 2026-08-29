@@ -77,7 +77,7 @@ impl EnvelopeError {
                 "publish a JSON envelope per the v1 draft (study §7); see the dead letter's payload"
             }
             EnvelopeError::MissingVersion => {
-                "no v field — a hand-typed test publish? Use desk-courier send-test, or add \"v\":1"
+                "no v field — a hand-typed test publish? Use newsflash send-test, or add \"v\":1"
             }
             EnvelopeError::UnsupportedVersion(_) => {
                 "this courier speaks envelope v1 only; a new version needs a mini-round (SCOPE S7)"

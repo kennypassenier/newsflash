@@ -1,4 +1,4 @@
-# Test plan — desk-courier
+# Test plan — newsflash
 
 Phase 7 output, 2026-08-29 (AFK — gate decisions are Claude's
 recommendations, built as decided; ratification queued as R5 in

@@ -7,13 +7,13 @@ way.
 
 Bootstrapped from the Kyu Integration Study
 (`ObsidianVault/Home Assistant/Documentation/Kyu Integration Study.md`,
-§5.P3, §5.P2, §7, §8b), where desk-courier (P3) was rated **Essential**
+§5.P3, §5.P2, §7, §8b), where newsflash (P3) was rated **Essential**
 and vault-courier (P2) **Desired** on 2026-08-28.
 
 ## Repo structure (S1 — decided)
 
 **One workspace repo** (`~/Projects/hub-clients`) holding the consumer
-binaries that run on Kenny's PC. First binary: `desk-courier`. The two
+binaries that run on Kenny's PC. First binary: `newsflash`. The two
 planned binaries share almost everything — envelope parsing, the hub
 client (long-poll, ack, retry), token handling, the systemd user-service
 pattern — so one repo means one CI, one hook set, one procedure
@@ -22,7 +22,7 @@ tag covers the workspace.
 
 ## Mission (S2)
 
-`desk-courier` runs on Kenny's Garuda PC, long-polls subscription
+`newsflash` runs on Kenny's Garuda PC, long-polls subscription
 `desktop` on topic `notify.kenny` at the kyu hub, and renders each
 message as a desktop toast via `notify-send`. After a successful toast
 the message is acked; a failed render leaves it unacked so the hub
@@ -55,7 +55,7 @@ detail; the scope statement is: short TTL, expiry visible, never a pile.
 
 ## Run form: systemd user service (S5)
 
-`desk-courier` runs as a systemd **user** service on the Garuda PC —
+`newsflash` runs as a systemd **user** service on the Garuda PC —
 the same pattern as the gmediarender/DLNA service (see
 `ObsidianVault/Home Assistant/Manuals/PC As DLNA Speaker.md`).
 Deliberately user-scoped: it lives only inside the desktop session, and
@@ -94,14 +94,14 @@ Each of these must end up test-proven:
   would come later through its own gate, expected in this repo. Kenny's
   note on the gate form (2026-08-28): *he is not yet sure it will come
   at all — the usefulness is still unproven to him.* Design nothing
-  speculative for it; shared code is factored for desk-courier's needs
+  speculative for it; shared code is factored for newsflash's needs
   only.
-- **No routing or audience logic in the client (S9).** desk-courier
+- **No routing or audience logic in the client (S9).** newsflash
   renders what arrives on its subscription and decides nothing about
   who gets what. Routing is upstream: the topic name is the address
   (`notify.kenny` ≠ `notify.parents`), the HA dispatcher picks the
   topic, and the hub itself never routes or transforms (kyu N5).
-- **Never a critical path (S10).** desk-courier is an *extra* channel,
+- **Never a critical path (S10).** newsflash is an *extra* channel,
   never a link something else waits on. Hub down or courier dead = no
   toasts, and nothing else changes: push, TTS and the todo fallback
   work exactly as today. This is the study's degradation doctrine ("the

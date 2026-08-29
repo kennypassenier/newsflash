@@ -3,7 +3,14 @@
 Consumer binaries for the [kyu](../kyu) message hub that run on
 Kenny's PC as systemd **user** services.
 
-**desk-courier** — long-polls subscription `desktop` on topic
+> **Renamed 2026-08-30** (mini-round): `desk-courier` → **newsflash**.
+> Same binary, same behaviour — Kenny picked a name that puns on the
+> `cue`/`queue`/`kyu` chain and the news-bulletin nature of a toast.
+> One sweep commit (binary, unit, config/state paths, docs, live
+> deployment) is the whole change; see `docs/REALIZATION_PLAN.md`
+> gate log.
+
+**newsflash** — long-polls subscription `desktop` on topic
 `notify.kenny` and renders each message as a desktop toast via
 `notify-send`, with an optional soft chime. Messages older than the
 subscription's 10-minute TTL expire at the hub — recorded, never
@@ -18,14 +25,14 @@ decision pending.)*
 ## Quick start
 
 See `docs/OPERATIONS_RUNBOOK.md` R1 for the numbered install. In short:
-`cargo install --path desk-courier`, copy `config.example.toml` to
-`~/.config/desk-courier/config.toml`, provide `KYU_TOKEN` via
+`cargo install --path newsflash`, copy `config.example.toml` to
+`~/.config/newsflash/config.toml`, provide `KYU_TOKEN` via
 `latch run` (or a 0600 `token_file`), install the systemd user unit
 from `systemd/`.
 
 ```
-desk-courier --version
-desk-courier send-test --title Proef --message "Werkt het?"
+newsflash --version
+newsflash send-test --title Proef --message "Werkt het?"
 ```
 
 ## One-time activation after a fresh clone

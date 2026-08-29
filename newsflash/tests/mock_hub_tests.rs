@@ -6,8 +6,8 @@
 
 use courier_core::hub::HubPayload;
 use courier_core::toast::Language;
-use desk_courier::config::Config;
-use desk_courier::hub_client::{HubClient, PolicyOutcome};
+use newsflash::config::Config;
+use newsflash::hub_client::{HubClient, PolicyOutcome};
 use std::sync::{Arc, Mutex};
 
 const REAL_ENVELOPE_RESPONSE: &str =
@@ -182,7 +182,7 @@ fn k9_the_token_reaches_the_wire_but_never_the_output() {
     let cfg = dir.join("config.toml");
     std::fs::write(&cfg, format!("hub_url = \"{addr}\"\n")).unwrap();
 
-    let out = std::process::Command::new(env!("CARGO_BIN_EXE_desk-courier"))
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_newsflash"))
         .args(["send-test", "--config"])
         .arg(&cfg)
         .args(["--title", "Scan", "--message", "scan test"])

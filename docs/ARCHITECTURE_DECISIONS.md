@@ -1,4 +1,4 @@
-# Architecture decisions — hub-clients (desk-courier)
+# Architecture decisions — hub-clients (newsflash)
 
 Phases 3+4 output, drafted 2026-08-29 during the AFK build. The draft
 was attacked by the architecture-critic agent (fresh context) on
@@ -33,7 +33,7 @@ Cargo workspace, two crates:
   envelope parsing, the settle table (including its *timing* rows —
   staleness is data in core, per the critic), dedup bookkeeping, toast
   mapping, backoff schedule.
-- `desk-courier` — the binary shell: HTTP, subprocesses, signals,
+- `newsflash` — the binary shell: HTTP, subprocesses, signals,
   filesystem, clock.
 The gate and CI enforce the boundary mechanically (dependency list +
 I/O-import grep). A future vault-courier would be a third crate reusing
@@ -86,7 +86,7 @@ window of this ordering and it survived unchanged.
 
 ### AR6 · Dedup store: bounded, atomic, fail-open
 Last 512 **hub message ids** in
-`$XDG_STATE_HOME/desk-courier/seen.json` (fallback `~/.local/state/…`),
+`$XDG_STATE_HOME/newsflash/seen.json` (fallback `~/.local/state/…`),
 written atomically (temp + rename, standing rule 12). Missing or
 corrupt file → start empty and say so in the log: fail-open, because
 an empty seen-set costs at worst a duplicate toast, never a lost one.
@@ -173,7 +173,7 @@ drill (AR18), and the documented fallback is a plain `EnvironmentFile`
 | `warning` | normal | 30 s |
 | `critical` | critical | 0 (persistent until dismissed) |
 
-App-name `desk-courier`; title/message in the configured language with
+App-name `newsflash`; title/message in the configured language with
 cross-language fallback (M3); summary truncated to 200 chars, body to
 1000 (AR4). **Recorded choice (critic):** `critical` urgency bypasses
 Plasma's Do-Not-Disturb — wanted for `notify.kenny` (the doorbell
@@ -229,7 +229,7 @@ which nothing consumes until hub-bridge P8 ships — recorded, but only
 dashboard-visible today.
 
 ### AR17 · Config
-`~/.config/desk-courier/config.toml` (XDG), full example committed as
+`~/.config/newsflash/config.toml` (XDG), full example committed as
 `config.example.toml` (no secrets — AR10). Validated at startup;
 every rejection names the field and the remedy (M2). Timeouts (AR19)
 and the truncation budget (AR4) have documented defaults here, not

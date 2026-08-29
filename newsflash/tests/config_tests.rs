@@ -1,11 +1,11 @@
 //! M2/AR10: every broken-config class fails with a message naming the
 //! field and the remedy; token resolution follows the AR10 order.
 
-use desk_courier::config;
+use newsflash::config;
 use std::path::PathBuf;
 
 fn write_config(name: &str, contents: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("desk-courier-test-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("newsflash-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join(name);
     std::fs::write(&path, contents).unwrap();

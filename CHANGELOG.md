@@ -2,7 +2,7 @@
 
 ## 0.1.0 — unreleased (Phase 9 pending)
 
-First release: **desk-courier**, the desktop-toast consumer for the kyu
+First release: **newsflash**, the desktop-toast consumer for the kyu
 message hub.
 
 - Long-polls subscription `desktop` on `notify.kenny` (envelope mode,

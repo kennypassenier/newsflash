@@ -1,19 +1,19 @@
-//! desk-courier — renders messages from the kyu hub's
+//! newsflash — renders messages from the kyu hub's
 //! `notify.kenny` topic as desktop toasts. See docs/SCOPE.md.
 
-use desk_courier::{config, logx, run, send_test};
+use newsflash::{config, logx, run, send_test};
 use std::path::PathBuf;
 
 const USAGE: &str = "usage:
-  desk-courier [--config <path>]                    run the courier
-  desk-courier send-test [--config <path>]
+  newsflash [--config <path>]                    run the courier
+  newsflash send-test [--config <path>]
                [--title T] [--message M] [--priority info|warning|critical]
-  desk-courier --version";
+  newsflash --version";
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "--version" || a == "-V") {
-        println!("desk-courier {}", env!("CARGO_PKG_VERSION"));
+        println!("newsflash {}", env!("CARGO_PKG_VERSION"));
         return;
     }
     if args.iter().any(|a| a == "--help" || a == "-h") {
@@ -29,7 +29,7 @@ fn main() {
             "send-test" => {
                 send = Some(send_test::TestMessage {
                     title: "Testbericht".into(),
-                    message: "desk-courier send-test".into(),
+                    message: "newsflash send-test".into(),
                     priority: "info".into(),
                 });
             }

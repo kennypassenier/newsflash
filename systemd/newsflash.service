@@ -1,12 +1,12 @@
-# desk-courier systemd USER unit (K7, AR20). Install:
+# newsflash systemd USER unit (K7, AR20). Install:
 #   mkdir -p ~/.config/systemd/user
-#   cp systemd/desk-courier.service ~/.config/systemd/user/
-#   systemctl --user daemon-reload && systemctl --user enable --now desk-courier
+#   cp systemd/newsflash.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now newsflash
 # Token comes from latch (M6); the fallback is a plain EnvironmentFile —
 # see docs/OPERATIONS_RUNBOOK.md R1.
 
 [Unit]
-Description=desk-courier — kyu hub messages as desktop toasts
+Description=newsflash — kyu hub messages as desktop toasts
 # Start after the session (and its notification service) is up; STOP at
 # logout — no session-less courier acking toasts nobody sees (AR20);
 # the subscription's TTL cleans the logged-out gap (S4).
@@ -23,9 +23,9 @@ Type=simple
 # latch resolves its project from the working directory (drill-proven
 # 2026-08-29), so point it at the linked repo.
 # Fallback without latch: replace ExecStart with the plain binary and
-# add: EnvironmentFile=%h/.config/desk-courier/token.env
+# add: EnvironmentFile=%h/.config/newsflash/token.env
 WorkingDirectory=%h/Projects/hub-clients
-ExecStart=%h/.cargo/bin/latch run -- %h/.cargo/bin/desk-courier
+ExecStart=%h/.cargo/bin/latch run -- %h/.cargo/bin/newsflash
 Restart=on-failure
 RestartSec=5
 # Bounded stop: above the worst case of a 30 s poll read + settle (AR19).

@@ -1,4 +1,4 @@
-//! M8 · `desk-courier send-test`: publish one valid v1 test envelope —
+//! M8 · `newsflash send-test`: publish one valid v1 test envelope —
 //! the interim producer (SCOPE S11d) and the drill tool.
 
 use crate::config::Config;
@@ -20,7 +20,7 @@ pub fn build_envelope(msg: &TestMessage) -> String {
     serde_json::json!({
         "v": 1,
         "id": id,
-        "source": "desk-courier",
+        "source": "newsflash",
         "kind": "notification",
         "audience": "kenny",
         "priority": msg.priority,

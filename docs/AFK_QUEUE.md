@@ -77,12 +77,12 @@ every "proven by" names an existing test or a logged drill.
   and enable protection with the gh token, then read the settings back
   (rule 13a).
 - **Enabling the systemd user service** on the PC
-  (`systemctl --user enable --now desk-courier`) — deployment onto the
+  (`systemctl --user enable --now newsflash`) — deployment onto the
   real desktop is Kenny's go. The unit file ships in the repo; test runs
   during drills started the binary directly, in the foreground.
 - **Anything against the live hub** (`10.10.10.9:8080`) — all
   development ran against a local scratch hub (S11c). Includes minting
-  the real `desk-courier` app token on the live hub's `/apps` page.
+  the real `newsflash` app token on the live hub's `/apps` page.
 - **Phase 9 — tag & release**: always Kenny's explicit go.
 
 ## Factual notes (no decision needed)

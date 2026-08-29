@@ -5,9 +5,9 @@
 
 use courier_core::envelope::parse_from_hub;
 use courier_core::toast::Language;
-use desk_courier::config::Config;
-use desk_courier::hub_client::{HubClient, PolicyOutcome};
-use desk_courier::send_test::{TestMessage, build_envelope};
+use newsflash::config::Config;
+use newsflash::hub_client::{HubClient, PolicyOutcome};
+use newsflash::send_test::{TestMessage, build_envelope};
 use std::process::{Child, Command};
 use std::time::Duration;
 

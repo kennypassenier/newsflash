@@ -5,7 +5,7 @@
 
 use courier_core::envelope::parse_envelope;
 use courier_core::toast::{Language, toast_spec};
-use desk_courier::render::{RunOutcome, daemon_present, play_sound, run_with_timeout, show_toast};
+use newsflash::render::{RunOutcome, daemon_present, play_sound, run_with_timeout, show_toast};
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
@@ -57,7 +57,7 @@ fn l3_render_shell_via_path_shims() {
     let logged = std::fs::read_to_string(&log).unwrap();
     assert!(
         logged.contains(
-            "--app-name=desk-courier --urgency=critical --expire-time=0 -- Vriezer -11 &lt; -18 &amp; stijgt"
+            "--app-name=newsflash --urgency=critical --expire-time=0 -- Vriezer -11 &lt; -18 &amp; stijgt"
         ),
         "unexpected notify-send argv: {logged}"
     );

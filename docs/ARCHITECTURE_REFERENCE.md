@@ -1,4 +1,4 @@
-# Architecture reference — desk-courier as built
+# Architecture reference — newsflash as built
 
 Phase 8 document: the system as it exists, written from the code.
 The *decisions* and their reasoning live in
@@ -10,12 +10,12 @@ The *decisions* and their reasoning live in
 notify.kenny topic (kyu hub, LXC 109)
         │  long-poll GET /t/notify.kenny/next?as=desktop&envelope=json&wait=20
         ▼
-┌─ desk-courier (systemd user service, Garuda PC) ─────────────┐
+┌─ newsflash (systemd user service, Garuda PC) ─────────────┐
 │ run.rs        the one loop: poll → settle → repeat           │
 │ hub_client.rs HTTP shell (ureq, AR19 timeouts)               │
 │ render.rs     notify-send / paplay / busctl via PATH         │
-│ state.rs      ~/.local/state/desk-courier/seen.json (atomic) │
-│ config.rs     ~/.config/desk-courier/config.toml + token     │
+│ state.rs      ~/.local/state/newsflash/seen.json (atomic) │
+│ config.rs     ~/.config/newsflash/config.toml + token     │
 │ logx.rs       sd-priority lines on stderr → journald         │
 └──────────────┬───────────────────────────────────────────────┘
                ▼
@@ -25,7 +25,7 @@ notify.kenny topic (kyu hub, LXC 109)
 `courier-core` (separate crate, zero ambient I/O — enforced by gate
 and CI) holds everything decidable without the world: envelope
 parsing, the settle table, dedup bookkeeping, toast mapping, backoff,
-hub-response parsing, error classification. `desk-courier` is the
+hub-response parsing, error classification. `newsflash` is the
 shell that gives it a hub, a desktop, a filesystem and a clock.
 
 ## The loop, one cycle
@@ -74,7 +74,7 @@ Toolchain pinned 1.97.1 (`rust-toolchain.toml`), edition 2024.
 
 ## Deployment
 
-systemd **user** unit (`systemd/desk-courier.service`): bound to
+systemd **user** unit (`systemd/newsflash.service`): bound to
 `graphical-session.target` both ways, crash-loop brake
 (`StartLimitBurst=5`/120 s), `TimeoutStopSec=45`. Update = runbook R2
 (git pull + `cargo install` + restart; no self-update, AR15). Restore

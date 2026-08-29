@@ -1,4 +1,4 @@
-# Operations runbook — desk-courier
+# Operations runbook — newsflash
 
 Numbered procedures, written in Phase 8 from what was actually executed
 (drill log has the evidence). One-time repo activation after a fresh
@@ -8,34 +8,34 @@ clone: `git config core.hooksPath .githooks` (see README).
 
 1. Build and install the binary:
    ```
-   cd ~/Projects/hub-clients && cargo install --path desk-courier
+   cd ~/Projects/hub-clients && cargo install --path newsflash
    ```
 2. Config:
    ```
-   mkdir -p ~/.config/desk-courier
-   cp config.example.toml ~/.config/desk-courier/config.toml
+   mkdir -p ~/.config/newsflash
+   cp config.example.toml ~/.config/newsflash/config.toml
    ```
    Set `hub_url` (live hub: `http://10.10.10.9:8080`).
-3. Token (M6): mint an app token named `desk-courier` on the hub's
+3. Token (M6): mint an app token named `newsflash` on the hub's
    `/apps` page, then store it in latch for this project:
    ```
    cd ~/Projects/hub-clients && latch init   # once
    # put KYU_TOKEN=<token> in the latch env for this project
    ```
    *(No latch? Fallback: put the token in
-   `~/.config/desk-courier/token`, `chmod 600` it, and set `token_file`
+   `~/.config/newsflash/token`, `chmod 600` it, and set `token_file`
    in the config — the unit file comments show the EnvironmentFile
    variant.)*
 4. Unit:
    ```
    mkdir -p ~/.config/systemd/user
-   cp systemd/desk-courier.service ~/.config/systemd/user/
+   cp systemd/newsflash.service ~/.config/systemd/user/
    systemctl --user daemon-reload
-   systemctl --user enable --now desk-courier
+   systemctl --user enable --now newsflash
    ```
-5. Verify: `journalctl --user -u desk-courier -n 5` shows the startup
+5. Verify: `journalctl --user -u newsflash -n 5` shows the startup
    summary and `hub reachable`; then
-   `desk-courier send-test --title Proef --message "Werkt het?"` pops a
+   `newsflash send-test --title Proef --message "Werkt het?"` pops a
    toast within a second or two.
 
 Status 2026-08-29: steps 1–2 and the unit's `systemd-analyze verify`
@@ -45,9 +45,9 @@ enabling the unit is deployment — AFK queue).
 ## R2 · Update (M5 — no self-update, by decision)
 
 1. `cd ~/Projects/hub-clients && git pull`
-2. `cargo install --path desk-courier`
-3. `systemctl --user restart desk-courier`
-4. `journalctl --user -u desk-courier -n 3` — the startup summary line
+2. `cargo install --path newsflash`
+3. `systemctl --user restart newsflash`
+4. `journalctl --user -u newsflash -n 3` — the startup summary line
    shows the new version.
 
 ## R3 · Restore from zero (M7)
@@ -69,21 +69,21 @@ Symptom: journal shows `hub rejected the token (401/403)` with the
 remedy line; toasts stop; the courier keeps retrying (that is the
 designed behaviour — nothing crashes).
 
-1. Mint a new `desk-courier` token on the hub's `/apps` page; revoke
+1. Mint a new `newsflash` token on the hub's `/apps` page; revoke
    the old one there.
 2. Update the latch secret (or the token file).
-3. `systemctl --user restart desk-courier`.
+3. `systemctl --user restart newsflash`.
 
 ## R5 · No toasts, hub fine — triage order
 
-1. `systemctl --user status desk-courier` — running at all? (Logged
+1. `systemctl --user status newsflash` — running at all? (Logged
    out = not running, by design: AR20.)
-2. `journalctl --user -u desk-courier -n 20` — the state lines say
+2. `journalctl --user -u newsflash -n 20` — the state lines say
    which of the named states holds: `hub unreachable`, `auth rejected`,
    `no notification daemon`, `topic does not exist yet`, `subscription
    was archived` (self-heals), or quiet 204 polling (all healthy).
 3. Hub side: the topic page on the hub dashboard shows the `desktop`
-   subscription, its backlog and dead letters; `desk-courier send-test`
+   subscription, its backlog and dead letters; `newsflash send-test`
    publishes a known-good envelope past every upstream suspect.
 4. Longer story: docs/DEBUGGING_GUIDE.md.
 

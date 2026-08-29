@@ -131,7 +131,7 @@ impl TestEnv {
         let config = self.dir.join("config.toml");
         std::fs::write(&config, format!("hub_url = \"{hub_url}\"\n")).unwrap();
         let journal = std::fs::File::create(self.journal()).unwrap();
-        Command::new(env!("CARGO_BIN_EXE_desk-courier"))
+        Command::new(env!("CARGO_BIN_EXE_newsflash"))
             .arg("--config")
             .arg(&config)
             .env(
@@ -370,7 +370,7 @@ fn m4_m11_sigterm_settles_and_the_journal_carries_the_lifecycle() {
 
     let journal = env.read_journal();
     for expected in [
-        "desk-courier 0.1.0 starting",
+        "newsflash 0.1.0 starting",
         "notification daemon present",
         "hub reachable",
         "shutdown: in-flight work settled, dedup store persisted",

@@ -10,7 +10,7 @@ pub fn state_path() -> PathBuf {
             let home = std::env::var_os("HOME").unwrap_or_default();
             PathBuf::from(home).join(".local").join("state")
         });
-    base.join("desk-courier").join("seen.json")
+    base.join("newsflash").join("seen.json")
 }
 
 /// Missing file = first run (silent); corrupt file = logged, empty

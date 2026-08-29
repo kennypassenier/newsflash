@@ -19,7 +19,7 @@ cargo test --all
 # the primary fence; this grep catches std back doors.
 if grep -rnE '^[[:space:]]*use[[:space:]]+(ureq|std::(fs|net|process|io))' courier-core/src/; then
   echo "GATE FAILED — courier-core imports ambient I/O (AR3)." >&2
-  echo "Move the I/O to the desk-courier shell; core stays pure." >&2
+  echo "Move the I/O to the newsflash shell; core stays pure." >&2
   exit 1
 fi
 

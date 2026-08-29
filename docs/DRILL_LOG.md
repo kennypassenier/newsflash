@@ -1,4 +1,4 @@
-# Drill log — desk-courier
+# Drill log — newsflash
 
 Live-drill evidence per standing rule 14 / AR18. Every drill ran on a
 **scratch hub** (local `kyu` binary, `127.0.0.1:18925`, temp data
@@ -41,7 +41,7 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   window closed, final line `shutdown: in-flight work settled, dedup
   store persisted`.
 - **S6b** — `seen.json` holds the three delivered hub ids; atomic file
-  in `$XDG_STATE_HOME/desk-courier/`.
+  in `$XDG_STATE_HOME/newsflash/`.
 - **S6c** — with `ttl_ms=60000` on the subscription and the courier
   down, a published message expired hub-side: metrics show
   `kyu_deliveries{…,state="expired"} 1`, `kyu.events` carries
@@ -72,14 +72,14 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   minted ON LXC 109 (the hub's master token never left that machine)
   and flowed straight into `.env` → `latch commit && latch push`
   (`latch run` injects `KYU_TOKEN`, length 48 — value never displayed).
-- `systemctl --user enable --now desk-courier`: active, enabled.
+- `systemctl --user enable --now newsflash`: active, enabled.
 - First contact with the LIVE hub behaved exactly as frozen: policy
   asserted (`effective.ttl_ms=600000` read back, lease/attempts still
   tracking hub defaults), and the cold-start replay found a backlog of
   retained envelopes on `notify.kenny` — every one **acked unrendered
   as stale** (journal lines), zero stale toasts. S4 held on its very
   first real run.
-- Dogfood (Phase 9 rule): `latch run -- desk-courier send-test` →
+- Dogfood (Phase 9 rule): `latch run -- newsflash send-test` →
   `rendered 01M17T391XRY5R3V2N40BQXRAW` — the first real toast from the
   live hub, on the real desktop, through the enabled unit. **K7 is now
   runtime-verified**, closing the build-vs-runtime gap from TEST_PLAN.

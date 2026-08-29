@@ -29,7 +29,7 @@ pub fn default_path() -> PathBuf {
             let home = std::env::var_os("HOME").unwrap_or_default();
             PathBuf::from(home).join(".config")
         });
-    base.join("desk-courier").join("config.toml")
+    base.join("newsflash").join("config.toml")
 }
 
 #[derive(serde::Deserialize)]
@@ -72,7 +72,7 @@ pub fn load(path: &Path) -> Result<Config, String> {
     if !hub_url.starts_with("http://") {
         return Err(format!(
             "hub_url {hub_url:?} must start with http:// — the hub speaks plain HTTP on the LAN \
-             (kyu N3); desk-courier deliberately ships no TLS stack (AR2)."
+             (kyu N3); newsflash deliberately ships no TLS stack (AR2)."
         ));
     }
 
@@ -157,7 +157,7 @@ fn resolve_token(token_file: Option<&str>) -> Result<String, String> {
     }
     let Some(path) = token_file else {
         return Err(
-            "no token available. Set KYU_TOKEN (latch run -- desk-courier) or set \
+            "no token available. Set KYU_TOKEN (latch run -- newsflash) or set \
              token_file in the config to a 0600 file holding the app token from the hub's \
              /apps page."
                 .to_string(),

@@ -3,7 +3,7 @@
 //! save creates its directory.
 
 use courier_core::dedup::SeenSet;
-use desk_courier::state;
+use newsflash::state;
 use std::path::PathBuf;
 
 fn fresh_path(name: &str) -> PathBuf {

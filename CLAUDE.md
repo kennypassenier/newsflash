@@ -1,7 +1,7 @@
 # hub-clients
 
 Consumer binaries for the kyu hub that run on Kenny's PC as systemd
-user services. First binary: `desk-courier` (desktop toasts from topic
+user services. First binary: `newsflash` (desktop toasts from topic
 `notify.kenny`). vault-courier (P2) may join later via its own gate —
 not certain, see docs/SCOPE.md non-goals.
 

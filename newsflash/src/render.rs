@@ -49,7 +49,7 @@ pub fn run_with_timeout(mut cmd: Command, timeout: Duration) -> RunOutcome {
 /// options (AR12).
 pub fn show_toast(spec: &ToastSpec) -> RunOutcome {
     let mut cmd = Command::new("notify-send");
-    cmd.arg("--app-name=desk-courier")
+    cmd.arg("--app-name=newsflash")
         .arg(format!("--urgency={}", spec.urgency.as_notify_send_arg()))
         .arg(format!("--expire-time={}", spec.expire_ms))
         .arg("--")

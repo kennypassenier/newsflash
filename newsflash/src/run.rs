@@ -41,7 +41,7 @@ pub fn run(config: Config) -> i32 {
     }
 
     logx::info(&format!(
-        "desk-courier {} starting: hub={} topic={} subscription={} language={:?} ttl={}min sound={}",
+        "newsflash {} starting: hub={} topic={} subscription={} language={:?} ttl={}min sound={}",
         env!("CARGO_PKG_VERSION"),
         config.hub_url,
         config.topic,
@@ -148,7 +148,7 @@ pub fn run(config: Config) -> i32 {
                     ),
                     HubErrorClass::Auth => log_state_change(
                         &mut last_state,
-                        "hub rejected the token (401/403). Remedy: re-mint the desk-courier \
+                        "hub rejected the token (401/403). Remedy: re-mint the newsflash \
                          app token on the hub's /apps page, update latch, restart this unit. \
                          Retrying meanwhile",
                     ),
@@ -176,7 +176,7 @@ pub fn run(config: Config) -> i32 {
                     HubErrorClass::TopicMissing => log_state_change(
                         &mut last_state,
                         "topic does not exist yet (nothing has ever published) — waiting; \
-                         desk-courier send-test creates it",
+                         newsflash send-test creates it",
                     ),
                     HubErrorClass::Other => log_state_change(
                         &mut last_state,

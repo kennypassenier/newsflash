@@ -1,4 +1,4 @@
-# Debugging guide — desk-courier
+# Debugging guide — newsflash
 
 The evidence trail first, then symptom → cause tables. Written in
 Phase 8 from the code; journal lines quoted here are the literal
@@ -6,7 +6,7 @@ strings from `run.rs`/`logx.rs`.
 
 ## The evidence trail
 
-1. **Journal** — `journalctl --user -u desk-courier -n 50`. One line
+1. **Journal** — `journalctl --user -u newsflash -n 50`. One line
    per lifecycle event, sd-priority prefixed. The startup summary names
    the config in force (hub, topic, subscription, language, TTL, sound
    — never the token). State *changes* log once; repeated failures do
@@ -14,9 +14,9 @@ strings from `run.rs`/`logx.rs`.
 2. **Hub dashboard** — the topic page for `notify.kenny` shows the
    `desktop` subscription, its backlog, dead letters (with payloads and
    a Requeue button) and the policy in force with what is explicit.
-3. **Dedup store** — `~/.local/state/desk-courier/seen.json`, a plain
+3. **Dedup store** — `~/.local/state/newsflash/seen.json`, a plain
    JSON array of the last delivered hub ids, oldest first.
-4. **Known-good injection** — `desk-courier send-test …` publishes a
+4. **Known-good injection** — `newsflash send-test …` publishes a
    valid envelope, bypassing every upstream suspect.
 
 ## Symptom → cause
@@ -56,7 +56,7 @@ One duplicate after a crash or a corrupt/absent dedup store is the
 accepted failure direction (AR5/AR6: a toast twice beats a toast
 never). A *stream* of duplicates would mean the store cannot persist —
 check the journal for `cannot write dedup store` lines and the
-permissions of `~/.local/state/desk-courier/`.
+permissions of `~/.local/state/newsflash/`.
 
 ## Poking the hub directly
 

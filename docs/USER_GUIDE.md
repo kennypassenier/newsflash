@@ -1,13 +1,13 @@
-# desk-courier — user guide
+# newsflash — user guide
 
-Everything desk-courier does, one feature at a time. Written in Phase 8
+Everything newsflash does, one feature at a time. Written in Phase 8
 from the code and tests; every claim names where it is proven
 (unit/mock tests run in `cargo test --all`; `live_*` tests run against
 the real kyu binary via `scripts/drill.sh`; desktop-level behaviour
 cites the drill log).
 
 If you have two minutes: install per runbook R1, run
-`desk-courier send-test --title Proef --message "Werkt het?"`, watch
+`newsflash send-test --title Proef --message "Werkt het?"`, watch
 the toast. That is the product.
 
 ## K1 · It receives by long-polling
@@ -25,7 +25,7 @@ the topic retains (dedup and the TTL check keep that safe).
 ## K2 · It renders toasts via notify-send
 
 Title and message from the envelope, in your configured language
-(M3), app-name `desk-courier`. The body is markup-escaped and both
+(M3), app-name `newsflash`. The body is markup-escaped and both
 fields are truncated to sane budgets, so a producer can neither smuggle
 options nor markup into the toast.
 
@@ -49,7 +49,7 @@ the hub's visible dead letters, never a void.
 
 Delivery is at-least-once (the hub's contract), so the courier keeps
 the last 512 delivered hub ids in
-`~/.local/state/desk-courier/seen.json` (atomic writes, survives
+`~/.local/state/newsflash/seen.json` (atomic writes, survives
 restarts). A redelivered id is acked silently. A corrupt store starts
 empty and says so — worst case one duplicate toast, never a lost one.
 
@@ -87,7 +87,7 @@ cyberpunk-soft, never metallic.
 
 ## K7 · It runs as a systemd user service
 
-`systemd/desk-courier.service`: starts after the graphical session,
+`systemd/newsflash.service`: starts after the graphical session,
 **stops at logout** (a toast without a session has no screen — the TTL
 covers the gap), restarts on failure with a crash-loop brake, bounded
 stop. Install per runbook R1.
@@ -122,7 +122,7 @@ URLs or error text.
 ## M8 · send-test
 
 ```
-desk-courier send-test --title Proef --message "Werkt het?" --priority warning
+newsflash send-test --title Proef --message "Werkt het?" --priority warning
 ```
 Publishes one valid v1 envelope to the configured topic — the drill
 tool, and the interim producer until the notification pipeline starts
@@ -144,7 +144,7 @@ the specific reason and remedy.
 `every_error_carries_a_remedy`,
 `live_m9_poison_lands_visibly_in_the_dead_letters`.
 
-## What desk-courier deliberately does not do
+## What newsflash deliberately does not do
 
 - **No routing or audience logic** — the topic name is the address;
   upstream decides who gets what (SCOPE S9).
