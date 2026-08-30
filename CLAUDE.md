@@ -36,3 +36,11 @@ not urgent), policy asserted on the live hub.
 - **Envelope v2 mini-round** when pipeline-v2 freezes its final
   schema (the pinned v1 vector test is the tripwire).
 - Chime file for K6 (sound is off until Kenny picks one).
+- **Configurable per-priority durations** (Kenny, 2026-08-30): the
+  `info`/`warning`/`critical` → duration mapping (currently hardcoded
+  in `courier-core/src/toast.rs::urgency_expire` — 10s/30s/persistent,
+  AR11) should become tunable. Note: "critical stays until explicitly
+  dismissed" is **already true today** (`expire_ms: 0`, standing since
+  0.1.0) — the open part is making the durations for `info`/`warning`
+  (and possibly `critical`'s persistence itself) configurable rather
+  than fixed constants.
