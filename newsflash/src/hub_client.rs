@@ -28,6 +28,10 @@ pub enum PolicyOutcome {
     },
 }
 
+/// Clone is cheap: `ureq::Agent` is internally `Arc`-backed, the rest is
+/// small strings. M10's detached action-watcher thread gets its own
+/// clone rather than sharing a reference across a thread boundary.
+#[derive(Clone)]
 pub struct HubClient {
     poll: ureq::Agent,
     ops: ureq::Agent,
@@ -175,9 +179,17 @@ impl HubClient {
         Ok(())
     }
 
-    /// M8: publish one envelope (the send-test path and the drills).
+    /// M8: publish one envelope (the send-test path and the drills) to
+    /// the subscribed topic.
     pub fn publish(&self, envelope_json: &str) -> Result<String, HubCallError> {
-        let url = format!("{}/t/{}", self.base, self.topic);
+        self.publish_to(&self.topic, envelope_json)
+    }
+
+    /// M10: publish to an arbitrary topic — the action-result reply
+    /// goes to `notify.actions` (courier_core::action_result::ACTIONS_TOPIC),
+    /// never to the subscribed `notify.kenny`.
+    pub fn publish_to(&self, topic: &str, envelope_json: &str) -> Result<String, HubCallError> {
+        let url = format!("{}/t/{}", self.base, topic);
         let response = self
             .ops
             .post(&url)

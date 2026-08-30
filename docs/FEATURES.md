@@ -37,17 +37,17 @@ that idea for good on 2026-08-30 (SCOPE non-goal S8).
 | M7 | **Backup & restore (mandatory item):** state = config (in git as example + tiny restore step), token (lives in latch, rides latch's own escrow), dedup cache (throwaway). No scheduled backup, by decision — restore-from-zero is a numbered runbook procedure and was drilled once | — decision — | The restore procedure rebuilds a working courier from a clean checkout; drilled during Phase 7 (evidence recorded). |
 | M8 | `send-test` subcommand — publishes a valid v1 test envelope to a hub (the interim producer per S11d, and the drill tool) | Desired | Round-trip test: `send-test` → courier consumes → fake renderer sees the toast argv. |
 | M9 | Poison-pill on malformed envelopes — unparseable JSON or no renderable content → nack `dead=true`, visible in the hub's dead letters instead of a retry loop | Essential | Live test: publish garbage → dead-lettered after one attempt, courier keeps running; unit tests for the poison decision table. |
-| M10 | `click_url` as a toast action (Open button → `xdg-open`) | Later | Defined if picked up — needs libnotify action support and a wait loop per toast; deliberately deferred. |
-| | *Amendment 2026-08-30 (mini-round):* Kenny redefined the direction — not just an Open button but **interactive action buttons** (1–2 per toast) whose click flows back into the house (ack bus) with HA-side timeout fallback. Reality-checked: `notify-send` 0.8.8 supports `--action`. Requirement filed with pipeline-v2 (owner of the envelope schema; their Phase 2/4 are frozen → their queued mini-round): vault note "Notification Pipeline V2 Action Buttons Requirement". newsflash builds only on their concept — M10 stays **Later** until that lands. | | |
+| M10 | Interactive action buttons on the toast (default "gelezen"/"snooze", or up to 2 custom ids from the envelope); a click publishes an `action_result` envelope to `notify.actions` | Essential | Unit: `resolve_actions` (default pair, custom pair, truncation-to-2, label fallback, language pick), `interactive_wait_cap_ms` (bounded-vs-uncapped), `build_action_result` (shape). Shim: exact `-A` argv per case, `show_toast_interactive` returns before the shim's simulated interaction completes, `watch_interactive_toast` reports a real click / a timeout / respects and enforces the safety cap / never caps a persistent toast. Live: a real toast with real buttons on the real desktop, a real click captured and republished to `notify.actions` on the scratch hub (`docs/DRILL_LOG.md`). |
+| | *Amendment history:* originally scoped as a plain `click_url` → Open button, **Later** (M10 row above superseded). Redefined 2026-08-30 (Kenny) to interactive action buttons; requirement filed with pipeline-v2 (owner of the envelope schema); their K12 mini-round approved the contract the same day (envelope `actions` field, default pair, `notify.actions` reply topic, client stays dumb). Built the same day — see `docs/ARCHITECTURE_DECISIONS.md` AR23–AR27. Rating raised **Later → Essential**: it is no longer a nice-to-have extension, it is the feature Kenny explicitly asked to resume the (briefly blocked) session for. | | |
 | M11 | Logging: one startup summary line (config in force, hub URL — never the token) + one line per lifecycle event (consumed, rendered, acked, nacked, expired-policy write, reconnect), journald-friendly | Essential | Log-capture test asserting the summary and per-event lines; plaintext-scan shares K9's assertion. |
 
 ## Tally (provisional, AFK)
 
 | Rating | Count | IDs |
 |---|---|---|
-| Essential | 15 | K1–K5, K7–K9 (8) · M1–M4, M6, M9, M11 (7) |
+| Essential | 16 | K1–K5, K7–K9 (8) · M1–M4, M6, M9, M11 (7) · M10 (2026-08-30 amendment) |
 | Desired | 2 | K6, M8 |
-| Later | 1 | M10 |
+| Later | 0 | — |
 | Don't do | 0 | — |
 | Decisions recorded | 2 | M5 (no self-update), M7 (no scheduled backup) |
 

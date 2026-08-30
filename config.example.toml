@@ -22,6 +22,12 @@ hub_url = "http://127.0.0.1:8080"
 # cyberpunk-soft, never metallic. Omit for silence.
 #sound_file = "/home/kenny/Music/chimes/soft-ping.ogg"
 
+# M10: how much longer (ms) the interactive-toast watcher waits above a
+# bounded toast's own expiry before giving up as a safety backstop —
+# not a UX duration. Does not apply to critical (persists until
+# dismissed, no cap regardless of this value). Default 30000 (30s).
+#interactive_wait_margin_ms = 30000
+
 # Fallback token source when KYU_TOKEN is not set: a file holding
 # the app token from the hub's /apps page. Must be chmod 600.
 #token_file = "/home/kenny/.config/newsflash/token"

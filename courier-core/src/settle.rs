@@ -37,6 +37,16 @@ pub fn pre_render(
     }
 }
 
+/// M10 note (2026-08-30): an interactive toast's render outcome is
+/// `Ok(Child)` / `Err(reason)` (spawn succeeded vs failed), not a bare
+/// bool — the shell matches that Result directly at the one call site
+/// rather than routing through `post_render`, since it needs the child
+/// handle on the success arm. This enum still documents the AR5
+/// decision correctly; only "how the shell learns which arm" changed
+/// from "did notify-send exit 0" to "did it spawn without an instant
+/// failure" (waiting for the user's click can no longer be part of
+/// that check — see `render.rs`'s module doc in the desk-courier
+/// crate).
 #[derive(Debug, PartialEq, Eq)]
 pub enum PostRender {
     /// Mark seen, then ack — in that order: a crash between the two

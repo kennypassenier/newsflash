@@ -4,13 +4,14 @@
 
 use crate::config::Config;
 use crate::hub_client::{HubClient, PolicyOutcome};
-use crate::render::{RunOutcome, daemon_present, show_toast};
+use crate::render::{daemon_present, show_toast_interactive, watch_interactive_toast};
 use crate::{logx, state};
+use courier_core::action_result::{ACTIONS_TOPIC, build_action_result};
 use courier_core::backoff::retry_delay_secs;
 use courier_core::envelope::parse_from_hub;
 use courier_core::hub::{HubErrorClass, classify_receive_status, is_stale};
-use courier_core::settle::{PostRender, PreRender, SettleCallOutcome, post_render, pre_render};
-use courier_core::toast::toast_spec;
+use courier_core::settle::{PreRender, SettleCallOutcome, pre_render};
+use courier_core::toast::{actions_are_truncated, interactive_wait_cap_ms, toast_spec};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -20,6 +21,14 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
+}
+
+/// M10: a fresh id for the action_result envelope newsflash publishes
+/// on a click — same shape as send_test's, this side just needs
+/// something unique, not globally meaningful.
+fn fresh_action_result_id() -> String {
+    let millis = now_ms();
+    format!("action-{millis}-{}", std::process::id())
 }
 
 /// Sleep in small slices so a shutdown signal is honored promptly even
@@ -220,9 +229,23 @@ fn handle_message(
                     message.id
                 ));
             }
+            if actions_are_truncated(env) {
+                logx::warn(&format!(
+                    "{}: more than 2 actions on the envelope — only the first 2 are shown (M10)",
+                    message.id
+                ));
+            }
             let spec = toast_spec(env, config.language);
-            match post_render(matches!(show_toast(&spec), RunOutcome::Ok)) {
-                PostRender::MarkSeenThenAck => {
+
+            // M10 (AR13 amendment): interactive toasts block on the
+            // user's answer, so "delivered" (ack, within the hub's
+            // lease) and "answered" (may take arbitrarily long, or
+            // never, for critical) are decoupled — the spawn/grace
+            // check settles the message here; the click, if any, is
+            // handled on a detached watcher below, exactly like the
+            // existing sound thread.
+            match show_toast_interactive(&spec) {
+                Ok(child) => {
                     seen.insert(&message.id);
                     state::save(seen_path, seen);
                     settle_logged(client, &message.id, true, false);
@@ -233,11 +256,46 @@ fn handle_message(
                     if let Some(sound) = &config.sound_file {
                         crate::render::play_sound(sound);
                     }
+
+                    let max_wait =
+                        interactive_wait_cap_ms(spec.expire_ms, config.interactive_wait_margin_ms)
+                            .map(|ms| Duration::from_millis(ms as u64));
+                    let payload_id = env.id.clone();
+                    let ack_id = env.ack_id.clone();
+                    let hub_id = message.id.clone();
+                    let watcher_client = client.clone();
+                    watch_interactive_toast(child, max_wait, move |action| {
+                        let Some(action_id) = action else {
+                            logx::info(&format!(
+                                "{hub_id}: toast dismissed or timed out, no action chosen"
+                            ));
+                            return;
+                        };
+                        logx::info(&format!("{hub_id}: action {action_id:?} chosen"));
+                        let body = build_action_result(
+                            &fresh_action_result_id(),
+                            &payload_id,
+                            ack_id.as_deref(),
+                            &action_id,
+                        );
+                        match watcher_client.publish_to(ACTIONS_TOPIC, &body) {
+                            Ok(published_id) => logx::info(&format!(
+                                "{hub_id}: action_result {published_id} published to {ACTIONS_TOPIC}"
+                            )),
+                            Err(e) => logx::warn(&format!(
+                                "{hub_id}: failed to publish action_result ({}): {}",
+                                e.status
+                                    .map(|s| s.to_string())
+                                    .unwrap_or("transport".into()),
+                                e.detail
+                            )),
+                        }
+                    });
                     false
                 }
-                PostRender::Nack => {
+                Err(reason) => {
                     logx::warn(&format!(
-                        "render failed for {} — nacked for redelivery; re-probing the daemon",
+                        "render failed for {} ({reason}) — nacked for redelivery; re-probing the daemon",
                         message.id
                     ));
                     settle_logged(client, &message.id, false, false);

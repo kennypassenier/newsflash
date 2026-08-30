@@ -310,3 +310,83 @@ the normal startup.
 (ratification form F7, with the S6b id-sharpening as F8 and the
 cold-start amendment as F9, all Akkoord). Changes from here go through
 mini-rounds only.
+
+## Amendment 2026-08-30 — M10 interactive action buttons (pipeline-v2 K12)
+
+Kenny asked for interactive action buttons (read-confirmation, a PC-first
+freezer flow); pipeline-v2 owns the envelope contract and approved it
+(their K12): optional `actions` field (max 2), default "gelezen"/"snooze"
+pair when absent, reply as an `action_result` envelope on
+`notify.actions`, client stays dumb (SCOPE S9 intact — no timeout/path
+logic here).
+
+### AR23 · `--action` forces a blocking wait — the render call splits in two
+Empirically verified 2026-08-30 (`notify-send --expire-time=2000 -A …`
+returns in exactly 2.007s; `--expire-time=0` blocks forever, confirmed
+by `timeout 3` killing it): `-A`/`--action` implies `--wait`, so a toast
+with buttons no longer returns instantly like a plain toast did. Every
+ordinary toast now carries buttons (K12), so this affects all of them,
+not a subset. Blocking the main poll loop on that would freeze message
+consumption for the whole toast duration — **forever** for a critical
+toast (`expire_ms == 0`). This amends AR13 (single loop): rendering an
+interactive toast is now two steps, `show_toast_interactive` (spawns,
+confirms no instant failure within a short grace period, returns) and
+`watch_interactive_toast` (detached thread, waits out the full
+interactive session, reports the click). The settle table (AR5) is
+unaffected in shape: "delivered" still means "shown", not "answered" —
+only the *evidence* for "shown" changed, from "process exited 0" to
+"process spawned without instantly failing". See `courier_core::settle`
+for the exact note on `PostRender`'s continued validity.
+
+### AR24 · Ack timing: decoupled from the click, on purpose
+The message is marked seen and acked as soon as `show_toast_interactive`
+confirms the toast is showing — **not** when (or whether) Kenny answers.
+Reasoning, stated hard: the hub's default lease is 30s, matching
+`warning`'s own 10s-margin-short-of-that toast duration; waiting for an
+answer before acking would race the lease on every bounded toast and
+would **guarantee** redelivery-while-displayed on every `critical`
+action toast (nobody answers within 30s consistently), duplicating the
+exact K4/S6b "exactly one render" guarantee this project spent Phase 7
+proving. Click handling therefore happens entirely after settlement, on
+its own detached thread — fire-and-forget from the loop's perspective,
+identical in spirit to the existing sound thread (AR11).
+
+### AR25 · The interactive watcher's safety cap: bounded toasts only, never critical
+**Live-drill finding (Kenny, 2026-08-30):** once the notify-send process
+that registered a toast's buttons exits — including from being killed by
+a timeout — Plasma drops the buttons from the still-visible notification.
+A flat safety-cap timeout on the watcher thread would therefore silently
+kill a critical toast's buttons long before anyone gets to click,
+breaking Kenny's own explicit requirement that critical persists until
+dismissed. Decided: `courier_core::toast::interactive_wait_cap_ms`
+returns `None` (no cap at all) when `expire_ms == 0`; for a bounded
+toast it returns `expire_ms` plus a margin
+(`interactive_wait_margin_ms`, config default 30000 — standing rule
+27: the margin is the operational knob, the no-cap branch for
+persistent toasts is a pinned decision). Proven live: the drill toast
+sent at `critical` priority sat on screen well past its would-be 30s
+cap with buttons intact (see `docs/DRILL_LOG.md`).
+
+### AR26 · The action_result envelope shape
+No formal schema exists beyond pipeline-v2's prose, so newsflash
+defines the minimal shape and documents it here (mirrors how the v1
+envelope itself carries kind-specific fields under `data`):
+```json
+{"v":1,"id":"<fresh>","kind":"action_result","source":"newsflash",
+ "ack_id":"<original ack_id, omitted if absent>",
+ "data":{"original_envelope_id":"<original env.id>","action_id":"<clicked id>"}}
+```
+Published via `HubClient::publish_to` (generalised from the previous
+subscribe-topic-only `publish`) to the pinned constant
+`courier_core::action_result::ACTIONS_TOPIC` (`notify.actions` —
+standing rule 27: a contract value, not configurable). `HubClient`
+derives `Clone` (cheap — `ureq::Agent` is `Arc`-backed) so the detached
+watcher thread gets its own handle rather than sharing one across the
+thread boundary.
+
+### AR27 · More than 2 actions: truncate and log, never poison
+A producer sending 3+ actions is a minor upstream bug, not an
+unrenderable envelope (AR4's poison bar is "cannot be understood at
+all") — `courier_core::toast::resolve_actions` keeps the first 2 and
+`actions_are_truncated` lets the shell log a warning (M11 pattern,
+same direction as the existing unknown-priority warning).

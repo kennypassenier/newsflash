@@ -3,6 +3,7 @@
 //! backoff schedule. No ambient I/O — everything here is testable
 //! without a hub, a desktop or a filesystem.
 
+pub mod action_result;
 pub mod backoff;
 pub mod dedup;
 pub mod envelope;

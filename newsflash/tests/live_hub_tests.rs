@@ -64,6 +64,7 @@ fn config_for(hub: &ScratchHub) -> Config {
         ttl_ms: 600_000,
         sound_file: None,
         token: "unused-open-hub".into(),
+        interactive_wait_margin_ms: 30_000,
     }
 }
 

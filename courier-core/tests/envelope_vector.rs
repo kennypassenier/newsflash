@@ -31,6 +31,12 @@ fn ar4_the_pinned_vector_maps_to_the_expected_toast() {
             body: "Temperatuur loopt op: -11 °C".into(),
             urgency: Urgency::Normal,
             expire_ms: 30_000,
+            // The vector predates M10; no `actions` field → the default
+            // pair (K12 amendment 2026-08-30).
+            actions: vec![
+                ("gelezen".into(), "Gelezen".into()),
+                ("snooze".into(), "Snooze".into())
+            ],
         }
     );
 }

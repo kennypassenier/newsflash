@@ -104,3 +104,55 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   artifact (`~/.cargo/bin/desk-courier`, `~/.config/desk-courier/`,
   `~/.local/state/desk-courier/`, the old unit file) confirmed absent
   after cleanup — zero stragglers.
+
+## 2026-08-30 · M10 interactive action buttons (pipeline-v2 K12)
+
+Empirical checks BEFORE building (FORM_PROTOCOL §5.6 — test the
+proposal against reality before freezing it), all on the real desktop:
+
+- `notify-send --expire-time=2000 -A gelezen=Gelezen -A snooze=Snooze`
+  blocked for exactly 2.007s, empty stdout, exit 0 — confirms `-A`
+  implies `--wait` and still honours `--expire-time`.
+- `--expire-time=0` with `-A` blocks **forever** (only returned when
+  killed by an external `timeout 3`) — confirms critical toasts with
+  buttons never self-resolve, driving AR23/AR24's design (ack must not
+  wait for the interaction).
+- **Live-drill discovery mid-build (Kenny):** after that killed test
+  process exited, the leftover critical toast stayed visible on screen
+  but its action buttons were gone — once the client dies, Plasma
+  drops the buttons even though the notification body persists. This
+  directly shaped AR25: the interactive watcher's safety-cap timeout
+  must never apply to a persistent (critical) toast, or the buttons
+  would die silently long before Kenny answers.
+
+Full interactive lifecycle drilled on a scratch hub
+(`127.0.0.1:18940`), real `newsflash` binary, real KDE Plasma 6.7.4:
+
+1. **Default buttons, no click (`info`, 10s):** toast "M10 drill"
+   rendered with "Gelezen"/"Snooze"; journal recorded
+   `toast dismissed or timed out, no action chosen` after the 10s
+   window — the timeout path, live, correct.
+2. **Custom single action, no click:** a hand-published envelope with
+   `actions:[{"id":"ik_pak_het_op","label":{"nl":"Ik pak het op"}}]`
+   rendered with that one custom button in place of the defaults;
+   same timeout path confirmed.
+3. **A real click, critical priority:** toast "M10 klik-test" sent at
+   `critical` (persists until dismissed) specifically so Kenny had
+   unlimited time; he clicked **"Gelezen"**. Journal:
+   `action "gelezen" chosen` →
+   `action_result 01M19G0G9MVV63HE91WNDT5Q82 published to notify.actions`.
+   Read back from the hub, the envelope matched AR26's shape exactly:
+   `{"v":1,"id":"action-...","kind":"action_result","source":"newsflash",
+   "data":{"original_envelope_id":"test-...","action_id":"gelezen"}}`.
+
+This is the load-bearing evidence for K12's test bar: a real button, a
+real human click, a real reply envelope, on the real hub contract.
+
+Loop-level (mock hub + real binary, `loop_tests.rs`): a new test
+scripts a clicking `notify-send` shim and asserts, on the real binary,
+that (a) the message is acked **before** the click is even known about
+(AR24 — proves settlement never waits on the interaction) and (b) the
+resulting POST to `notify.actions` carries the exact original payload
+id and chosen action id. Closes the one gap the manual desktop drill
+above cannot: proof that `run.rs` wires the pieces together correctly,
+not just that each piece works in isolation.

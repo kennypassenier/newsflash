@@ -1,7 +1,10 @@
 //! Envelope → toast mapping (AR11, M1, M3): language pick with
-//! cross-language fallback, priority → urgency/expire table.
+//! cross-language fallback, priority → urgency/expire table. M10
+//! (2026-08-30, pipeline-v2 K12): every toast carries action buttons —
+//! the envelope's own `actions` if present (max 2), else the default
+//! "gelezen"/"snooze" pair.
 
-use crate::envelope::{Envelope, LocalizedText};
+use crate::envelope::{ActionDef, Envelope, LocalizedText};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Language {
@@ -32,6 +35,54 @@ pub struct ToastSpec {
     pub urgency: Urgency,
     /// 0 = persistent until dismissed (the critical case).
     pub expire_ms: u32,
+    /// M10: (action id, resolved label). Never empty — always the
+    /// custom pair or the default one.
+    pub actions: Vec<(String, String)>,
+}
+
+/// The reserved default pair (M10/K12): shown when the envelope carries
+/// no `actions`. Fixed labels, not run through the nl/en pick logic —
+/// pipeline-v2's contract spells these two words exactly.
+pub const DEFAULT_ACTIONS: [(&str, &str); 2] = [("gelezen", "Gelezen"), ("snooze", "Snooze")];
+
+/// M10: producer-supplied actions beyond the first 2 are dropped — the
+/// caller (which has logging) should warn when this returns true.
+pub fn actions_are_truncated(env: &Envelope) -> bool {
+    env.actions.as_ref().is_some_and(|a| a.len() > 2)
+}
+
+/// M10 safety-cap policy (standing rule 27 — the margin is the
+/// operational knob, the "no cap for persistent toasts" branch is a
+/// pinned decision, not configurable): a bounded toast's interactive
+/// watcher waits `expire_ms` plus a margin above what the toast already
+/// promises to do on its own. A persistent (critical, `expire_ms == 0`)
+/// toast gets **no cap** — measured live 2026-08-30: once the watcher
+/// kills the process, Plasma drops the action buttons even though the
+/// notification body stays visible, silently breaking "critical lasts
+/// until dismissed" long before anyone answers.
+pub fn interactive_wait_cap_ms(expire_ms: u32, margin_ms: u32) -> Option<u32> {
+    if expire_ms == 0 {
+        None
+    } else {
+        Some(expire_ms.saturating_add(margin_ms))
+    }
+}
+
+fn resolve_actions(env: &Envelope, lang: Language) -> Vec<(String, String)> {
+    match env.actions.as_ref().filter(|a| !a.is_empty()) {
+        Some(defs) => defs
+            .iter()
+            .take(2)
+            .map(|d: &ActionDef| {
+                let label = pick(Some(&d.label), lang).unwrap_or_else(|| d.id.clone());
+                (d.id.clone(), label)
+            })
+            .collect(),
+        None => DEFAULT_ACTIONS
+            .iter()
+            .map(|(id, label)| (id.to_string(), label.to_string()))
+            .collect(),
+    }
 }
 
 fn pick(text: Option<&LocalizedText>, lang: Language) -> Option<String> {
@@ -98,6 +149,7 @@ pub fn toast_spec(env: &Envelope, lang: Language) -> ToastSpec {
         body: escape_markup(&truncate(&body, BODY_MAX_CHARS)),
         urgency,
         expire_ms,
+        actions: resolve_actions(env, lang),
     }
 }
 
@@ -199,5 +251,82 @@ mod tests {
         let e = env(r#"{"v":1,"id":"x","priority":"shouting","title":{"nl":"a"}}"#);
         let t = toast_spec(&e, Language::Nl);
         assert_eq!((t.urgency, t.expire_ms), (Urgency::Normal, 10_000));
+    }
+
+    #[test]
+    fn k12_no_actions_field_gets_the_default_pair() {
+        let e = env(r#"{"v":1,"id":"x","title":{"nl":"a"}}"#);
+        let t = toast_spec(&e, Language::Nl);
+        assert_eq!(
+            t.actions,
+            vec![
+                ("gelezen".to_string(), "Gelezen".to_string()),
+                ("snooze".to_string(), "Snooze".to_string())
+            ]
+        );
+    }
+
+    #[test]
+    fn k12_an_empty_actions_array_also_gets_the_default_pair() {
+        let e = env(r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[]}"#);
+        assert_eq!(toast_spec(&e, Language::Nl).actions.len(), 2);
+    }
+
+    #[test]
+    fn k12_custom_actions_replace_the_default_pair_with_localized_labels() {
+        let e = env(r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[
+                {"id":"ik_pak_het_op","label":{"nl":"Ik pak het op","en":"I'm on it"}}
+            ]}"#);
+        let t = toast_spec(&e, Language::Nl);
+        assert_eq!(
+            t.actions,
+            vec![("ik_pak_het_op".to_string(), "Ik pak het op".to_string())]
+        );
+        let t_en = toast_spec(&e, Language::En);
+        assert_eq!(t_en.actions[0].1, "I'm on it");
+    }
+
+    #[test]
+    fn k12_more_than_two_actions_are_truncated_and_flagged() {
+        let e = env(r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[
+                {"id":"a","label":{"nl":"A"}},
+                {"id":"b","label":{"nl":"B"}},
+                {"id":"c","label":{"nl":"C"}}
+            ]}"#);
+        assert!(actions_are_truncated(&e));
+        let t = toast_spec(&e, Language::Nl);
+        assert_eq!(t.actions.len(), 2);
+        assert_eq!(t.actions[0].0, "a");
+        assert_eq!(t.actions[1].0, "b");
+    }
+
+    #[test]
+    fn k12_two_actions_is_not_flagged_as_truncated() {
+        let e = env(r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[
+                {"id":"a","label":{"nl":"A"}},
+                {"id":"b","label":{"nl":"B"}}
+            ]}"#);
+        assert!(!actions_are_truncated(&e));
+    }
+
+    #[test]
+    fn k12_a_custom_action_missing_its_label_falls_back_to_the_id() {
+        let e = env(r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[{"id":"raw_id"}]}"#);
+        let t = toast_spec(&e, Language::Nl);
+        assert_eq!(
+            t.actions,
+            vec![("raw_id".to_string(), "raw_id".to_string())]
+        );
+    }
+
+    #[test]
+    fn m10_a_bounded_toast_gets_expire_plus_margin() {
+        assert_eq!(interactive_wait_cap_ms(10_000, 30_000), Some(40_000));
+        assert_eq!(interactive_wait_cap_ms(30_000, 30_000), Some(60_000));
+    }
+
+    #[test]
+    fn m10_a_persistent_critical_toast_gets_no_cap() {
+        assert_eq!(interactive_wait_cap_ms(0, 30_000), None);
     }
 }

@@ -9,6 +9,12 @@ pub const DEFAULT_TTL_MINUTES: u64 = 10;
 /// AR19: poll wait window (seconds). Short enough that a SIGTERM mid
 /// long-poll settles well inside the unit's stop timeout (AR20).
 pub const POLL_WAIT_SECS: u64 = 20;
+/// M10 default margin (standing rule 27 — this margin is the knob; the
+/// "no cap for a persistent toast" branch stays pinned, see
+/// `courier_core::toast::interactive_wait_cap_ms`). Generous headroom
+/// above a bounded toast's own expiry for the watcher thread's safety
+/// cap — not a UX duration, just "give up waiting eventually".
+pub const DEFAULT_INTERACTIVE_WAIT_MARGIN_MS: u32 = 30_000;
 
 #[derive(Debug)]
 pub struct Config {
@@ -20,6 +26,7 @@ pub struct Config {
     pub ttl_ms: u64,
     pub sound_file: Option<PathBuf>,
     pub token: String,
+    pub interactive_wait_margin_ms: u32,
 }
 
 pub fn default_path() -> PathBuf {
@@ -39,6 +46,7 @@ struct RawConfig {
     subscription: Option<String>,
     language: Option<String>,
     ttl_minutes: Option<u64>,
+    interactive_wait_margin_ms: Option<u32>,
     sound_file: Option<String>,
     token: Option<String>,
     token_file: Option<String>,
@@ -129,6 +137,10 @@ pub fn load(path: &Path) -> Result<Config, String> {
 
     let token = resolve_token(raw.token_file.as_deref())?;
 
+    let interactive_wait_margin_ms = raw
+        .interactive_wait_margin_ms
+        .unwrap_or(DEFAULT_INTERACTIVE_WAIT_MARGIN_MS);
+
     Ok(Config {
         hub_url,
         topic,
@@ -137,6 +149,7 @@ pub fn load(path: &Path) -> Result<Config, String> {
         ttl_ms: ttl_minutes * 60_000,
         sound_file,
         token,
+        interactive_wait_margin_ms,
     })
 }
 

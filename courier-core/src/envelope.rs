@@ -43,9 +43,29 @@ pub struct Envelope {
     pub title: Option<LocalizedText>,
     #[serde(default)]
     pub message: Option<LocalizedText>,
-    // tts, ack_id, click_url and data are deliberately not modeled:
-    // speech is the DLNA channel's job, click_url is feature M10
-    // (Later), and the courier never inspects data (no routing, S9).
+    #[serde(default)]
+    pub ack_id: Option<String>,
+    /// M10 (pipeline-v2 K12, 2026-08-30): optional custom action buttons,
+    /// max 2. Absent/empty → the toast layer fills in the default
+    /// "gelezen"/"snooze" pair (AR11 amendment) — this field only carries
+    /// an override.
+    #[serde(default)]
+    pub actions: Option<Vec<ActionDef>>,
+    // tts, click_url and data are deliberately not modeled: speech is the
+    // DLNA channel's job, and the courier never inspects data (no
+    // routing, S9). click_url stays out even with M10 built — pipeline-v2
+    // never asked for it and no automation reads it from the client side.
+}
+
+/// One custom action button (M10). `id` rides back on the click as-is;
+/// "gelezen" and "snooze" are reserved by pipeline-v2's contract and
+/// keep their dedicated HA-side handling — any other id is producer-
+/// defined and replays as a `mobile_app_notification_action` event.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct ActionDef {
+    pub id: String,
+    #[serde(default)]
+    pub label: LocalizedText,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

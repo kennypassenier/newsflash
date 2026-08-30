@@ -18,6 +18,7 @@ const TOKEN: &str = "LOOP-SECRET-TOKEN-77x";
 struct Seen {
     method: String,
     url: String,
+    body: String,
 }
 
 struct MockHub {
@@ -36,12 +37,17 @@ fn scripted_hub(polls: Vec<(u16, String)>) -> MockHub {
     let queue = Mutex::new(VecDeque::from(polls));
     std::thread::spawn(move || {
         loop {
-            let Ok(request) = server.recv() else { return };
+            let Ok(mut request) = server.recv() else {
+                return;
+            };
             let method = request.method().to_string();
             let url = request.url().to_string();
+            let mut body = String::new();
+            let _ = std::io::Read::read_to_string(request.as_reader(), &mut body);
             log.lock().unwrap().push(Seen {
                 method: method.clone(),
                 url: url.clone(),
+                body,
             });
             let (status, body): (u16, String) = if url.contains("/next") {
                 match queue.lock().unwrap().pop_front() {
@@ -195,6 +201,27 @@ fn urls(requests: &Arc<Mutex<Vec<Seen>>>) -> Vec<String> {
         .iter()
         .map(|s| format!("{} {}", s.method, s.url))
         .collect()
+}
+
+/// M10: overwrites the plain notify-send shim with one that answers a
+/// click after a short delay — long enough to prove
+/// `show_toast_interactive` didn't block the loop, short enough to
+/// keep the test fast.
+fn install_clicking_notify_send(env: &TestEnv, action_id: &str) {
+    let path = env.dir.join("bin").join("notify-send");
+    std::fs::write(
+        &path,
+        format!(
+            "#!/bin/sh\necho \"notify-send $*\" >> {log}\nsleep 0.3\necho {action_id}\nexit 0\n",
+            log = env.shim_log.display(),
+        ),
+    )
+    .unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
 }
 
 #[test]
@@ -383,4 +410,81 @@ fn m4_m11_sigterm_settles_and_the_journal_carries_the_lifecycle() {
     assert!(!journal.contains(TOKEN));
     // The startup summary names the config in force.
     assert!(journal.contains("ttl=10min") && journal.contains("sound=off"));
+}
+
+/// M10, end to end through the real binary: a click on a rendered
+/// toast must reach the hub as an `action_result` envelope on
+/// `notify.actions`, carrying the original envelope's own id — this is
+/// the wiring `render_tests.rs` cannot see (it never runs the full
+/// receive → render → detach → publish path).
+#[test]
+fn m10_a_click_is_republished_as_an_action_result_on_notify_actions() {
+    let env = test_env("actions");
+    install_clicking_notify_send(&env, "snooze");
+    let hub = scripted_hub(vec![envelope_poll_with_payload_id(
+        "hub-act-1",
+        "p-act-1",
+        "M10 loop test",
+    )]);
+    let mut child = env.spawn_courier(&hub.addr);
+
+    wait_until(
+        "message acked (settle does not wait for the click)",
+        15,
+        || {
+            urls(&hub.requests)
+                .iter()
+                .any(|u| u.contains("/ack/hub-act-1"))
+        },
+    );
+    wait_until("action_result published to notify.actions", 15, || {
+        urls(&hub.requests)
+            .iter()
+            .any(|u| u.starts_with("POST /t/notify.actions"))
+    });
+    sigterm(&child);
+    assert_eq!(wait_exit(&mut child, 10), Some(0));
+
+    let seen = hub.requests.lock().unwrap();
+    let ack_idx = seen
+        .iter()
+        .position(|s| s.url.contains("/ack/hub-act-1"))
+        .unwrap();
+    let publish_idx = seen
+        .iter()
+        .position(|s| s.url.starts_with("/t/notify.actions"))
+        .unwrap();
+    assert!(
+        ack_idx < publish_idx,
+        "the message must settle BEFORE the click is known about, not after (AR24)"
+    );
+
+    let body = &seen[publish_idx].body;
+    let json: serde_json::Value = serde_json::from_str(body).unwrap_or_else(|e| {
+        panic!("action_result body was not valid JSON ({e}): {body}");
+    });
+    assert_eq!(json["v"], 1);
+    assert_eq!(json["kind"], "action_result");
+    assert_eq!(json["source"], "newsflash");
+    assert_eq!(json["data"]["original_envelope_id"], "p-act-1");
+    assert_eq!(json["data"]["action_id"], "snooze");
+
+    assert!(
+        env.read_journal().contains("action \"snooze\" chosen"),
+        "the click must be logged: {}",
+        env.read_journal()
+    );
+}
+
+fn envelope_poll_with_payload_id(hub_id: &str, payload_id: &str, title: &str) -> (u16, String) {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    (
+        200,
+        format!(
+            r#"{{"id":"{hub_id}","topic":"notify.kenny","attempt":1,"published_at":{now},"content_type":"application/json","payload":{{"v":1,"id":"{payload_id}","title":{{"nl":"{title}"}}}}}}"#
+        ),
+    )
 }

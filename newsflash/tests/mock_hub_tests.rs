@@ -61,6 +61,7 @@ fn config_for(hub_url: &str) -> Config {
         ttl_ms: 600_000,
         sound_file: None,
         token: "mock-token-XYZ".into(),
+        interactive_wait_margin_ms: 30_000,
     }
 }
 
