@@ -57,7 +57,7 @@ topic/subscription refused, ttl overflow refused), G11-part
 
 **Accepted as known limitation:**
 - ~~K7 runtime verification~~ — **closed 2026-08-30**: unit enabled,
-  live-hub policy asserted and read back, dogfood toast rendered
+  live-hub policy asserted and read back, field-test toast rendered
   through the running service (DRILL_LOG).
 - **Second-SIGTERM abort path** untested (registration order is the
   documented signal-hook pattern; failure mode is a bounded stop

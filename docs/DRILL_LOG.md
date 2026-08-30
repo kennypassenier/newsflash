@@ -66,7 +66,10 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   unit) waits for Kenny: token minting on the live hub's /apps page is
   queued (AFK queue, "Deliberately not done").
 
-## 2026-08-30 · Deployment + dogfood (Phase 9)
+## 2026-08-30 · Deployment + field test (Phase 9)
+
+*(Logged at the time as "dogfood"; the procedure renamed that step to
+"field test" on 2026-08-30. Same step, clearer name.)*
 
 - Kenny allowed `ssh pve` via `settings.local.json`; the app token was
   minted ON LXC 109 (the hub's master token never left that machine)
@@ -79,7 +82,7 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   retained envelopes on `notify.kenny` — every one **acked unrendered
   as stale** (journal lines), zero stale toasts. S4 held on its very
   first real run.
-- Dogfood (Phase 9 rule): `latch run -- newsflash send-test` →
+- Field test (Phase 9 rule): `latch run -- newsflash send-test` →
   `rendered 01M17T391XRY5R3V2N40BQXRAW` — the first real toast from the
   live hub, on the real desktop, through the enabled unit. **K7 is now
   runtime-verified**, closing the build-vs-runtime gap from TEST_PLAN.
@@ -94,7 +97,7 @@ rendered by the real KDE Plasma 6.7.4 daemon (two visible test toasts).
   no duplicate-toast risk on the next redelivery); new unit installed,
   enabled, started — `journalctl` shows the clean startup line under
   the new name.
-- Dogfood repeated under the new name: `newsflash send-test` →
+- Field test repeated under the new binary name: `newsflash send-test` →
   `rendered 01M17WYFNS48Y7XENT7WV86V1X` — a real toast, new binary,
   same live hub.
 - Read-back (rule 13a habit, applied to a local system too): every old
