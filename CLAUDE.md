@@ -21,6 +21,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — see "Open work" below for what starts as its own mini-round |
 | AFK mode | off since 2026-08-29 |
+| **Session status** | **BLOCKED BY Notification pipeline v2** (Kenny, 2026-08-30) — waiting on their action-button design before M10 work resumes here; session title carries this. Unblock: Kenny clicks the standing form in that session when it clears. |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
 project still internally named `hub-clients` in latch — cosmetic,
@@ -28,11 +29,15 @@ not urgent), policy asserted on the live hub.
 
 ## Open work (each its own mini-round, not started)
 
-- **M10 — interactive action buttons: UNBLOCKED, ready to build.**
-  pipeline-v2 approved the contract (their K12, 2026-08-30): optional
-  `actions` field on the envelope, default "Gelezen"/"Snooze" buttons,
-  click flows back as an `action_result` envelope to
-  `notify.actions`. See `docs/FEATURES.md` M10 amendment.
+- **M10 — interactive action buttons: BLOCKED on pipeline-v2's design**
+  (Kenny, 2026-08-30, superseding the earlier "unblocked" note below).
+  pipeline-v2 approved a data contract (their K12, 2026-08-30 ≈01:15):
+  optional `actions` field on the envelope, default "Gelezen"/"Snooze"
+  buttons, click flows back as an `action_result` envelope to
+  `notify.actions` — see `docs/FEATURES.md` M10 amendment. Kenny says
+  the actual action-button design (or the design work behind it) is
+  still pipeline-v2's to finish; do not start building M10 until that
+  session signals it is done.
 - **Envelope v2 mini-round** when pipeline-v2 freezes its final
   schema (the pinned v1 vector test is the tripwire).
 - Chime file for K6 (sound is off until Kenny picks one).
