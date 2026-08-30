@@ -3,6 +3,14 @@
 //! (2026-08-30, pipeline-v2 K12): every toast carries action buttons —
 //! the envelope's own `actions` if present (max 2), else the default
 //! "gelezen"/"snooze" pair.
+//!
+//! AR11 amendment (2026-08-30, mini-round): each priority now also
+//! carries a distinct icon. First attempt was a `low`/`normal` urgency
+//! split for `info`/`warning` — reverted the same day, live-confirmed
+//! against Plasma's own QML source that urgency carries no visual
+//! styling at all (only behavioural differences: persistence, DND
+//! bypass, sort order). The icon is the part that actually renders
+//! differently (see `docs/DRILL_LOG.md`).
 
 use crate::envelope::{ActionDef, Envelope, LocalizedText};
 
@@ -35,6 +43,11 @@ pub struct ToastSpec {
     pub urgency: Urgency,
     /// 0 = persistent until dismissed (the critical case).
     pub expire_ms: u32,
+    /// AR11 amendment (2026-08-30): a freedesktop icon name, one per
+    /// priority — the actual visual differentiator (urgency itself
+    /// carries no Plasma styling, live-confirmed against Plasma's own
+    /// QML source).
+    pub icon: &'static str,
     /// M10: (action id, resolved label). Never empty — always the
     /// custom pair or the default one.
     pub actions: Vec<(String, String)>,
@@ -109,6 +122,17 @@ fn urgency_expire(priority: Option<&str>) -> (Urgency, u32) {
     }
 }
 
+/// Priority → freedesktop icon name (AR11 amendment, 2026-08-30): the
+/// visual differentiator urgency itself cannot provide. Standard
+/// `dialog-*` names ship with every icon theme.
+fn icon_for(priority: Option<&str>) -> &'static str {
+    match priority {
+        Some("critical") => "dialog-error",
+        Some("warning") => "dialog-warning",
+        _ => "dialog-information",
+    }
+}
+
 /// AR4 truncation budget: a toast never needs more.
 pub const SUMMARY_MAX_CHARS: usize = 200;
 pub const BODY_MAX_CHARS: usize = 1000;
@@ -149,6 +173,7 @@ pub fn toast_spec(env: &Envelope, lang: Language) -> ToastSpec {
         body: escape_markup(&truncate(&body, BODY_MAX_CHARS)),
         urgency,
         expire_ms,
+        icon: icon_for(env.priority.as_deref()),
         actions: resolve_actions(env, lang),
     }
 }
@@ -220,6 +245,25 @@ mod tests {
         let e = env(r#"{"v":1,"id":"x","priority":"critical","title":{"nl":"a"}}"#);
         let t = toast_spec(&e, Language::Nl);
         assert_eq!((t.urgency, t.expire_ms), (Urgency::Critical, 0));
+    }
+
+    #[test]
+    fn ar11_the_three_priorities_get_three_distinct_icons() {
+        assert_eq!(icon_for(Some("info")), "dialog-information");
+        assert_eq!(icon_for(Some("warning")), "dialog-warning");
+        assert_eq!(icon_for(Some("critical")), "dialog-error");
+    }
+
+    #[test]
+    fn ar11_an_unknown_priority_gets_the_info_icon() {
+        assert_eq!(icon_for(Some("shouting")), "dialog-information");
+        assert_eq!(icon_for(None), "dialog-information");
+    }
+
+    #[test]
+    fn ar11_toast_spec_carries_the_icon_for_its_priority() {
+        let e = env(r#"{"v":1,"id":"x","priority":"warning","title":{"nl":"a"}}"#);
+        assert_eq!(toast_spec(&e, Language::Nl).icon, "dialog-warning");
     }
 
     #[test]

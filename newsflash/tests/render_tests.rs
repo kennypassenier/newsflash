@@ -84,8 +84,8 @@ fn l3_render_shell_via_path_shims() {
     let logged = std::fs::read_to_string(&log).unwrap();
     assert!(
         logged.contains(
-            "--app-name=newsflash --urgency=critical --expire-time=0 -A gelezen=Gelezen \
-             -A snooze=Snooze -- Vriezer -11 &lt; -18 &amp; stijgt"
+            "--app-name=newsflash --urgency=critical --expire-time=0 --icon=dialog-error \
+             -A gelezen=Gelezen -A snooze=Snooze -- Vriezer -11 &lt; -18 &amp; stijgt"
         ),
         "unexpected notify-send argv: {logged}"
     );
@@ -114,8 +114,8 @@ fn l3_render_shell_via_path_shims() {
         parse_envelope(br#"{"v":1,"id":"x","priority":"warning","title":{"nl":"W"}}"#).unwrap();
     drop(show_toast_interactive(&toast_spec(&env, Language::Nl)).unwrap());
     let logged = std::fs::read_to_string(&log).unwrap();
-    assert!(logged.contains("--urgency=normal --expire-time=10000"));
-    assert!(logged.contains("--urgency=normal --expire-time=30000"));
+    assert!(logged.contains("--urgency=normal --expire-time=10000 --icon=dialog-information"));
+    assert!(logged.contains("--urgency=normal --expire-time=30000 --icon=dialog-warning"));
 
     // K3: a failing spawn/instant-exit reports Err (the loop nacks).
     std::fs::write(&fail_flag, "").unwrap();

@@ -156,3 +156,89 @@ resulting POST to `notify.actions` carries the exact original payload
 id and chosen action id. Closes the one gap the manual desktop drill
 above cannot: proof that `run.rs` wires the pieces together correctly,
 not just that each piece works in isolation.
+
+## 2026-08-30 · Stress test — 300-message flood, button-count ladder, the Plasma popup-limit discovery
+
+Kenny's own words framing this session: "kijk...wat er gebeurt." All on
+the scratch hub (`127.0.0.1:18941` this time — a second scratch
+instance, same rule as always: never the live hub).
+
+**300-message flood (S6e evidence + first sighting of the popup
+limit).** 300 envelopes published back-to-back, mixed priority
+(50% info / 35% warning / 15% critical, 10 with 3-50 actions to stress
+AR27's truncation under load). All 300 rendered, 0 crashes, thread
+count peaked at 77 concurrent watchers and settled back to 1, memory
+flat at ~5MB RSS throughout. `actions_are_truncated` fired exactly 10
+times — one per extreme envelope, matching AR27 exactly even at this
+volume. This run is also where the "knoppen verdwijnen bij een stapel"
+phenomenon was first spotted (Kenny: he saw buttons on ~4 toasts, none
+on the rest) — everything below traces that down.
+
+**Button-count ladder (2/4/6/8/12/20 real actions, bypassing
+newsflash's own 2-action cap via raw `notify-send`).** All rendered,
+all clickable, up to 20 — no hard button-count ceiling in Plasma
+itself. Past roughly 6-8 buttons, labels truncate to an unreadable
+ellipsis ("Kno..." instead of "Knop 1") — a legibility ceiling, not a
+technical one. Basis for the D3 requirement filed with pipeline-v2
+(see below).
+
+**Isolating "knoppen verdwijnen": three controlled tests, one real
+mechanism traced to source.**
+1. A single isolated `critical` toast, and separately 8 simultaneous
+   `critical` toasts (`Kritiek-burst #1`-`#8`) — buttons held in every
+   case, no matter how many or how long.
+2. A single isolated `normal`-urgency toast — buttons held the full
+   30s, unprompted, no stacking. Ruled out a flat Plasma popup-timeout
+   as the cause (a live guess, tested and rejected the same way R6/H14
+   were: against reality, not just plausibility).
+3. `Cap-test #1-5` (5 simultaneous `normal` toasts, 1s apart): the
+   first 4 held buttons the full 45s, the 5th lost them within
+   seconds of appearing. This pinned the number: **4 simultaneous**.
+
+Read KDE's own source for the exact mechanism rather than guess further
+(`plasma-workspace`, `applets/notifications/global/Globals.qml`, via
+GitHub) — findings and the accepted-limitation decision are AR28 in
+`docs/ARCHITECTURE_DECISIONS.md`. Also checked and ruled out as a
+config knob: `~/.config/plasmanotifyrc` (nothing relevant), the
+Notifications KCM (`kcm_notifications.so` `strings`-searched for any
+max-popup wording — none).
+
+**The AR11 icon pivot — a wrong hypothesis, caught and corrected in
+one session.** First response to "info and warning look identical" was
+mapping `info`→`low` urgency, on the assumption Plasma styles urgency
+levels differently. Built it, live-tested it (two isolated toasts, one
+`low` one `normal`) — Kenny: "nope, lijken nog altijd hetzelfde."
+Confirmed by reading Plasma's popup QML component tree directly: no
+urgency-conditional styling anywhere. Reverted the urgency split same
+session, replaced with a `--icon` per priority
+(`dialog-information`/`dialog-warning`/`dialog-error`) — live-confirmed
+this actually renders distinctly, both via raw `notify-send` and
+through the rebuilt real `newsflash` binary against the scratch hub.
+
+**The reflow-on-close finding (the deepest one, Kenny's own
+observation).** With icons in place, re-ran the 3-priority scenario
+twice:
+- Sent near-simultaneously (courier draining a 3-message backlog at
+  its own pace, spawns roughly 300-800ms apart): 2 of 3 (`info`,
+  `warning`) lost buttons quickly — well under the count-4 limit,
+  contradicting the count/height explanation alone.
+- Same 3 messages, this time spaced 1s apart (matching the successful
+  `Cap-test` spacing): all 3 held their buttons. Confirms spawn timing,
+  not just simultaneous count, matters.
+- Mid-hold, Kenny dismissed the `critical` toast by clicking one of its
+  buttons. The instant it closed, **both remaining toasts — which had
+  already been stably showing buttons for tens of seconds — lost
+  theirs.** Nothing about their own state changed; only the popup stack
+  around them did. This is `positionPopups()` re-running on every
+  popup-set change (not just newsflash's own toasts closing) and
+  re-applying the height-fill visibility check to whoever remains —
+  documented as the third mechanism in AR28.
+
+**Outcome:** accepted as a known, external Plasma limitation (Kenny,
+2026-08-30) — see AR28 and SCOPE S6f. Standing guidance: only
+`critical` carries a reliable, whole-lifetime guarantee that action
+buttons stay answerable. Two requirements filed with pipeline-v2 from
+this session — per-message duration override (D1) and a richer
+default action set given the 20-button headroom found above (D3) — see
+the Obsidian vault doc `Notification Pipeline V2 Duration Override And
+Richer Actions Requirement.md`.

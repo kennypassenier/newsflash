@@ -32,6 +32,13 @@ BLOCKED BY that project; Kenny relayed the approved design and asked
 for the build, which shipped the same turn — AR23–AR27 in
 `docs/ARCHITECTURE_DECISIONS.md`, live-verified with a real click on
 a real critical toast on Kenny's own desktop (`docs/DRILL_LOG.md`).
+Stress-tested the same day (300-message flood, button-count ladder,
+multi-toast drills): S6e (independently-answerable simultaneous toasts)
+confirmed live; found and accepted a hard, external Plasma popup-limit
+(AR28, SCOPE S6f) — only `critical` reliably keeps its buttons under
+load; AR11 gained a per-priority `--icon` (the real visual
+differentiator — an urgency-based attempt was tried, tested, and
+reverted the same session, see AR28's sibling amendment).
 
 ## Open work (each its own mini-round, not started)
 
@@ -46,3 +53,12 @@ a real critical toast on Kenny's own desktop (`docs/DRILL_LOG.md`).
   0.1.0) — the open part is making the durations for `info`/`warning`
   (and possibly `critical`'s persistence itself) configurable rather
   than fixed constants.
+- **Two requirements filed with pipeline-v2** (2026-08-30, from the
+  stress-test session): D1, a message-level override for its own
+  display duration (`docs/DRILL_LOG.md` 2026-08-30 entry); D3, a
+  richer default action set (Kenny proposed Dismiss/Snooze 5m/1h/24h)
+  backed by a live measurement that Plasma renders up to 20 buttons
+  with no hard cap, though labels blur past ~6-8. Filed as
+  `Notification Pipeline V2 Duration Override And Richer Actions
+  Requirement.md` in the Obsidian vault — newsflash builds its half
+  once pipeline-v2 rules on the contract, same pattern as K12/M10.

@@ -28,7 +28,7 @@ that idea for good on 2026-08-30 (SCOPE non-goal S8).
 
 | ID | Feature | Rating | Test expectation |
 |---|---|---|---|
-| M1 | Priority → toast urgency mapping: `info`→normal, `warning`→normal, `critical`→critical (persistent until dismissed) + matching `--expire-time` | Essential | Unit tests per priority asserting the exact `notify-send` urgency/expire argv. |
+| M1 | Priority → toast urgency mapping: `info`→normal, `warning`→normal, `critical`→critical (persistent until dismissed) + matching `--expire-time` + `--icon` (2026-08-30 amendment: one freedesktop icon per priority, the actual visual differentiator — see AR11 revision) | Essential | Unit tests per priority asserting the exact `notify-send` urgency/expire/icon argv. |
 | M2 | TOML config with startup validation and actionable error messages (standing rule 11) — hub URL, topic, subscription, language, sound, TTL | Essential | Test per broken-config class asserting startup fails naming the field and the remedy; defaults documented. |
 | M3 | Language selection — config `language = "nl"` (default) picks `title.nl`/`message.nl`; missing translation falls back to the other language rather than dropping the toast | Essential | Unit tests: nl present → nl; nl missing → en fallback; both missing → poison path (M9). |
 | M4 | Graceful shutdown — SIGTERM/SIGINT finishes the in-flight render/ack, then exits 0 (clean `systemctl --user stop`) | Essential | Test sending SIGTERM mid-cycle asserting the in-flight message is settled (acked or nacked), never left to lease expiry. |

@@ -206,13 +206,16 @@ fn urls(requests: &Arc<Mutex<Vec<Seen>>>) -> Vec<String> {
 /// M10: overwrites the plain notify-send shim with one that answers a
 /// click after a short delay — long enough to prove
 /// `show_toast_interactive` didn't block the loop, short enough to
-/// keep the test fast.
-fn install_clicking_notify_send(env: &TestEnv, action_id: &str) {
+/// keep the test fast. Each invocation logs its own start time in
+/// milliseconds (`START <ms>`), so a test can prove two toasts were
+/// genuinely open at once rather than processed one after the other.
+fn install_clicking_notify_send(env: &TestEnv, action_id: &str, sleep_secs: f32) {
     let path = env.dir.join("bin").join("notify-send");
     std::fs::write(
         &path,
         format!(
-            "#!/bin/sh\necho \"notify-send $*\" >> {log}\nsleep 0.3\necho {action_id}\nexit 0\n",
+            "#!/bin/sh\necho \"START $(date +%s%3N)\" >> {log}\n\
+             echo \"notify-send $*\" >> {log}\nsleep {sleep_secs}\necho {action_id}\nexit 0\n",
             log = env.shim_log.display(),
         ),
     )
@@ -420,7 +423,7 @@ fn m4_m11_sigterm_settles_and_the_journal_carries_the_lifecycle() {
 #[test]
 fn m10_a_click_is_republished_as_an_action_result_on_notify_actions() {
     let env = test_env("actions");
-    install_clicking_notify_send(&env, "snooze");
+    install_clicking_notify_send(&env, "snooze", 0.3);
     let hub = scripted_hub(vec![envelope_poll_with_payload_id(
         "hub-act-1",
         "p-act-1",
@@ -487,4 +490,105 @@ fn envelope_poll_with_payload_id(hub_id: &str, payload_id: &str, title: &str) ->
             r#"{{"id":"{hub_id}","topic":"notify.kenny","attempt":1,"published_at":{now},"content_type":"application/json","payload":{{"v":1,"id":"{payload_id}","title":{{"nl":"{title}"}}}}}}"#
         ),
     )
+}
+
+fn critical_envelope_poll(hub_id: &str, payload_id: &str, title: &str) -> (u16, String) {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    (
+        200,
+        format!(
+            r#"{{"id":"{hub_id}","topic":"notify.kenny","attempt":1,"published_at":{now},"content_type":"application/json","payload":{{"v":1,"id":"{payload_id}","priority":"critical","title":{{"nl":"{title}"}}}}}}"#
+        ),
+    )
+}
+
+/// M10, Kenny's own question (2026-08-30): when several critical toasts
+/// pile up, can each be handled independently rather than only the
+/// first one? Yes — proven here through the real binary. AR23/AR24's
+/// per-toast detached watcher means the main loop never waits for one
+/// toast's answer before rendering the next; two critical messages
+/// delivered back to back must both be showing (both notify-send
+/// processes started) well within the FIRST toast's own interactive
+/// window, and each click must republish with its OWN original
+/// envelope id — no cross-talk between the two watchers.
+#[test]
+fn m10_multiple_critical_toasts_stay_independently_answerable() {
+    let env = test_env("multi-actions");
+    // Each shim invocation "shows" for 1.5s before answering — long
+    // enough that if the loop were still serialising (the bug this
+    // architecture exists to avoid), the second toast could not
+    // possibly start until 1.5s after the first.
+    install_clicking_notify_send(&env, "gelezen", 1.5);
+    let hub = scripted_hub(vec![
+        critical_envelope_poll("hub-multi-1", "p-multi-1", "Kritiek 1"),
+        critical_envelope_poll("hub-multi-2", "p-multi-2", "Kritiek 2"),
+    ]);
+    let mut child = env.spawn_courier(&hub.addr);
+
+    // Both must be acked (shown) — neither waits for the other's click.
+    wait_until("both critical toasts acked", 15, || {
+        let u = urls(&hub.requests);
+        u.iter().any(|x| x.contains("/ack/hub-multi-1"))
+            && u.iter().any(|x| x.contains("/ack/hub-multi-2"))
+    });
+
+    // Both notify-send invocations must have STARTED close together in
+    // wall-clock time — not 1.5s apart, which is what strict
+    // serialisation would look like.
+    wait_until("both notify-send starts logged", 5, || {
+        env.read_shim_log()
+            .lines()
+            .filter(|l| l.starts_with("START "))
+            .count()
+            >= 2
+    });
+    let starts: Vec<i64> = env
+        .read_shim_log()
+        .lines()
+        .filter_map(|l| l.strip_prefix("START "))
+        .filter_map(|ms| ms.trim().parse().ok())
+        .collect();
+    assert!(starts.len() >= 2, "expected 2 start timestamps: {starts:?}");
+    let gap = (starts[1] - starts[0]).abs();
+    assert!(
+        gap < 1000,
+        "the two toasts started {gap} ms apart — that is not overlap, \
+         the loop is still serialising on the interaction (starts: {starts:?})"
+    );
+
+    // Both action_results must appear, each with its OWN original id —
+    // proof there is no mix-up between the two concurrent watchers.
+    wait_until("both action_results published", 15, || {
+        urls(&hub.requests)
+            .iter()
+            .filter(|u| u.starts_with("POST /t/notify.actions"))
+            .count()
+            >= 2
+    });
+    sigterm(&child);
+    assert_eq!(wait_exit(&mut child, 10), Some(0));
+
+    let seen = hub.requests.lock().unwrap();
+    let original_ids: std::collections::HashSet<String> = seen
+        .iter()
+        .filter(|s| s.url.starts_with("/t/notify.actions"))
+        .map(|s| {
+            let v: serde_json::Value = serde_json::from_str(&s.body).unwrap();
+            v["data"]["original_envelope_id"]
+                .as_str()
+                .unwrap()
+                .to_string()
+        })
+        .collect();
+    assert_eq!(
+        original_ids,
+        ["p-multi-1", "p-multi-2"]
+            .into_iter()
+            .map(String::from)
+            .collect(),
+        "each click must be attributed to its own original envelope, not mixed up"
+    );
 }

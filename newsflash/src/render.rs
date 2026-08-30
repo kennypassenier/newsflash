@@ -70,7 +70,8 @@ fn build_toast_command(spec: &ToastSpec) -> Command {
     let mut cmd = Command::new("notify-send");
     cmd.arg("--app-name=newsflash")
         .arg(format!("--urgency={}", spec.urgency.as_notify_send_arg()))
-        .arg(format!("--expire-time={}", spec.expire_ms));
+        .arg(format!("--expire-time={}", spec.expire_ms))
+        .arg(format!("--icon={}", spec.icon));
     // -A before the -- separator like every other option; the id/label
     // pair itself is producer/default text and never treated as a flag
     // (AR12 hygiene applies to summary/body, not to notify-send's own

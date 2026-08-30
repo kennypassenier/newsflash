@@ -390,3 +390,89 @@ unrenderable envelope (AR4's poison bar is "cannot be understood at
 all") — `courier_core::toast::resolve_actions` keeps the first 2 and
 `actions_are_truncated` lets the shell log a warning (M11 pattern,
 same direction as the existing unknown-priority warning).
+
+## Amendment 2026-08-30 — icons, and a hard Plasma popup-limit (stress test)
+
+Kenny stress-tested M10 with a 300-message flood, a knob-count ladder
+(2 through 20 buttons), and a series of controlled multi-toast drills.
+Two outcomes: a small AR11 revision (icons), and a significant,
+externally-imposed limitation on non-critical toasts that this project
+cannot fix and now documents instead.
+
+### AR11 revision · Icons are the real visual differentiator, not urgency
+First attempt: split `info`→`low` urgency from `warning`→`normal`,
+hypothesising Plasma renders different urgencies with different
+styling. **Wrong, and reverted the same session** — a direct read of
+Plasma's own QML source (`plasma-workspace`,
+`applets/notifications/`) turned up no urgency-conditional styling
+anywhere in the popup component tree; urgency only changes *behaviour*
+(persistence, DND bypass, sort order), never appearance. Live-confirmed
+against Kenny's own desktop: an isolated `low`-urgency toast and an
+isolated `normal`-urgency toast looked identical.
+What actually works, live-confirmed the same way: a **freedesktop icon
+per priority** (`--icon=dialog-information` / `dialog-warning` /
+`dialog-error`, standard names shipped by every icon theme) — Plasma
+always renders the icon regardless of urgency. `ToastSpec` gained an
+`icon: &'static str` field; `courier_core::toast::icon_for` is a plain
+priority match, `render::build_toast_command` adds `--icon=<icon>`
+right after `--expire-time`. Kept the `Urgency` enum exactly as AR11
+originally defined it (`info`/`warning` both `normal`) — the low/normal
+split bought nothing and reverting it removed the only speculative,
+untested piece of the AR11 table.
+
+### AR28 · The Plasma popup stack has a hard, non-configurable ceiling — critical is exempt, nothing else reliably is
+Traced to KDE Plasma's own source
+(`plasma-workspace/applets/notifications/global/Globals.qml`, read via
+GitHub during the drill, not guessed) — **three separate mechanisms**,
+each confirmed live on Kenny's desktop, that can strip a non-critical
+toast's action buttons while the notification body stays visible:
+
+1. **Count limit** (`Globals.qml` ~L430): the popup model's `limit` is
+   `Math.ceil(availableScreenHeight / (Kirigami.Units.gridUnit × 4))`
+   — computed from live screen geometry and Plasma's global UI scale,
+   not a setting. Measured at **4** on Kenny's desktop across two
+   independent tests (`Cap-test #1-5`, `AppTest #1-8`).
+2. **Height fill** (`Globals.qml` ~L192, ~L415-421): even under that
+   count, `positionPopups()` hides (not destroys — `popup.visible =
+   false`, buttons and all) any popup whose stacked position would
+   exceed `popupMaximumScreenFill` (hardcoded `readonly`, `0.8` — 80%
+   of screen height) of cumulative popup height, except the topmost
+   (`i === 0`) which is always shown. Explains why even 2-3 toasts can
+   lose buttons when each is taller (icon + 2 action buttons make every
+   M10 toast taller than a plain one).
+3. **Reflow-on-close** (drill-found, not in the two mechanisms above —
+   Kenny, 2026-08-30): `positionPopups()` re-runs whenever the popup
+   set changes, including when ANY popup closes — not just newsflash's
+   own. Live-observed: two non-critical toasts held their buttons
+   stably for tens of seconds while a third (critical) toast stayed
+   open; the moment Kenny dismissed the critical one, the *remaining*
+   two immediately lost their buttons, despite nothing about their own
+   state having changed. Removing a popup from the stack retroactively
+   re-evaluates and can demote toasts that had already been stable —
+   the risk to a non-critical toast's buttons is not fixed at spawn
+   time, it persists for the toast's entire visible lifetime.
+
+`sortMode: NotificationManager.Notifications.SortByTypeAndUrgency`
+(`Globals.qml` ~L440) is why `critical` is exempt from all three:
+critical-urgency notifications always sort first, landing in the
+slot(s) mechanisms 1 and 2 never hide, and — separately confirmed live,
+8 simultaneous critical toasts, all kept their buttons — in practice
+also the slot mechanism 3 never demotes. None of the three mechanisms
+read from `plasmanotifyrc` or appear in the Notifications KCM
+(`kcm_notifications.so` was `strings`-searched for any max-popup wording
+— nothing); they are fixed in Plasma's QML, changeable in practice only
+by shrinking `Kirigami.Units.gridUnit` — Kenny's entire desktop's UI
+scale, a wildly disproportionate trade for newsflash's popup count.
+
+**Decision:** accepted as a known, external limitation (Kenny,
+2026-08-30) — the only alternative is newsflash building its own
+notification queue/reordering, which is exactly the client-side
+decision logic SCOPE S9 rules out. **Standing guidance, adopted the
+same day:** a message whose action button must reliably remain
+answerable belongs on the `critical` path — no other priority carries
+that guarantee, and the guarantee is not just "at spawn time," it holds
+for the toast's entire displayed lifetime regardless of what else opens
+or closes around it. See `docs/DRILL_LOG.md` for the full live-drill
+trail (the 300-message flood, the button-count ladder, and the
+three-mechanism isolation tests) and `docs/SCOPE.md` S6f for the
+success-criteria-facing version of this note.

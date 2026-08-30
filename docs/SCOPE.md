@@ -87,6 +87,32 @@ Each of these must end up test-proven:
 - **S6d** — hub unreachable → the service does not crash, keeps
   reconnecting calmly, logs it visibly; when the hub returns, toasts
   flow again.
+- **S6e** *(added 2026-08-30, M10)* — several action-button toasts can
+  be open and independently answerable at once (e.g. a pile of
+  critical messages after being away); the main loop never serialises
+  on one toast's answer before rendering the next, and each click
+  reaches the house attributed to its own original message — no
+  cross-talk between concurrently open toasts. Kenny explicitly asked
+  for this while building M10; no priority reordering was requested or
+  built (see the non-goal note under S9) — this criterion is only
+  about toasts *coexisting and each staying answerable*, not about
+  which one visually sits on top.
+- **S6f** *(added 2026-08-30, stress-test session)* — a non-critical
+  (`info`/`warning`) toast's action buttons are not reliably answerable
+  under real-world conditions: KDE Plasma's own popup stack has three
+  hardcoded, non-configurable mechanisms (a ~4-simultaneous count limit,
+  an 80%-of-screen-height fill cap, and a reflow-on-close effect that
+  can strip buttons from an already-stable toast the moment ANY other
+  popup closes nearby — not just newsflash's own) that can silently
+  demote a non-critical toast's buttons at any point during its visible
+  lifetime, not only at the moment it appears. `critical` is the only
+  priority Plasma exempts from all three — see AR28 in
+  `docs/ARCHITECTURE_DECISIONS.md` for the full source-level trace.
+  **Standing guidance:** a message whose action button must reliably
+  stay answerable belongs on the `critical` path. This is accepted as
+  an external Plasma limitation, not a newsflash defect — fixing it
+  client-side would mean building the notification queue/reordering
+  logic the non-goal below already rules out.
 
 ## Contract (S7)
 
