@@ -39,7 +39,7 @@ subprocess spawns (argv-array, no shell, `--` separator, trusted
 config paths only), untrusted payload flow (never reaches paths, URLs
 or execution; settle key is the hub id), token handling (wire-only;
 scan-tested twice — send-test path and the loop harness), plain-HTTP
-baseline (accepted N3 design, nothing new worsens it; bodies bounded),
+baseline (accepted kyu N3 design, nothing new worsens it; bodies bounded),
 serde on untrusted JSON (size-budgeted, no side-effectful fields).
 
 ## Hardening round (test-gap-auditor, 2026-08-29)

@@ -50,7 +50,7 @@ compatibility is survival), missing optional fields default, unknown
 `priority` reads as `info`. Hard requirements: `v == 1`, a non-empty
 `id`, at least one renderable text — anything else is poison (AR5).
 The poison log line distinguishes "no `v` field" (almost certainly a
-hand-typed test publish from the hub dashboard's W9 box) from a wrong
+hand-typed test publish from the hub dashboard's publish box, kyu W9) from a wrong
 version. **Size budget (critic):** payloads over 256 KiB are poison
 without parsing (a toast never needs that; an unbounded `data` blob
 must not ride into `notify-send` argv), and rendered text is truncated
