@@ -39,10 +39,10 @@ fi
 
 # Gate 2: traceability (standing rule 4). The message must contain IDs
 # in brackets, e.g. [W12, AR9] or [L4b] — or [meta] for infra commits.
-if ! printf '%s' "$cmd" | grep -qE '\[(meta|[A-Za-z]{1,4}[0-9])[^]]*\]'; then
+if ! printf '%s' "$cmd" | grep -qE '\[(meta|[A-Za-z]{1,4}[0-9]|[a-z]{3,}(-[a-z0-9]+)*-[0-9]+)[^]]*\]'; then
   {
     echo "COMMIT BLOCKED — message lacks feature/milestone IDs (standing rule 4)."
-    echo "Add the IDs this commit implements, e.g.: feat(L4b): groups [W12a-d, AR9]"
+    echo "Add the IDs this commit implements, e.g.: feat(sync): groups [feat-storage-12, arch-7]"
     echo "Pure infrastructure commits use [meta]."
   } >&2
   exit 2
