@@ -57,7 +57,7 @@ that idea for good on 2026-08-30 (SCOPE non-goal S8).
 Akkoord, same day; M5/M6/M7 decisions ratified as F3/F4/F5, the K6
 default-off as F6). Changes from here go through mini-rounds only.
 
-## Round 3 — 2026-09-24 (built on branch `windows-port`, pending ratification)
+## Round 3 — 2026-09-24 (ratified 2026-09-26, mini-round windows-port)
 
 | ID | Feature | Rating | Test expectation |
 |---|---|---|---|

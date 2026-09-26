@@ -479,7 +479,7 @@ success-criteria-facing version of this note.
 
 ## Amendment 2026-09-24 — Windows twin, installers, and the live message fields
 
-Pending Kenny's ratification (built on branch `windows-port`). Windows-
+Ratified by Kenny on 2026-09-26 (mini-round windows-port form: windows-desktop, live-fields and installers all Akkoord) and merged to `main` via PR #2. Windows-
 specific decisions are arch-win-1–arch-win-7 in `docs/WINDOWS.md`; cohesion
 proposals to the other systems are in `docs/PROPOSALS.md`.
 

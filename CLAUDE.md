@@ -19,8 +19,8 @@ gates hold from any session or terminal. After a fresh clone, run:
 |---|---|
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
-| Next gate | **mini-round windows-port** (ratification): Windows port + live message fields + installers, as draft PR #2 (`windows-port` → `main`) |
-| Next action | waiting on Kenny: the ten-item form of 2026-09-26: three report items (windows-desktop, live-fields, installers; all Akkoord = merge PR #2, CI green on both jobs), windows CI as required check, ask-4/ask-5 routing calls, filing the asks, claude-peek cleanup, popup durations, chime |
+| Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
+| Next action | executing the 2026-09-26 form answers: claude-peek cleanup, deferred meaning from pipeline-v2, filing the asks, popup durations, chime candidates |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -41,8 +41,8 @@ load; AR11 gained a per-priority `--icon` (the real visual
 differentiator — an urgency-based attempt was tried, tested, and
 reverted the same session, see AR28's sibling amendment).
 
-**Windows port — BUILT 2026-09-24 on branch `windows-port`, NOT yet
-ratified or merged.** Kenny asked for a Windows 11 equivalent (dual boot
+**Windows port — BUILT 2026-09-24, RATIFIED 2026-09-26 and merged to
+`main` (PR #2).** Kenny asked for a Windows 11 equivalent (dual boot
 with Garuda, one `desktop` subscription). New crate `newsflash-win`;
 `run.rs` now drives a `Desktop` trait (Linux behaviour unchanged, all
 tests green); toast XML is pure core (`courier-core/src/wintoast.rs`).

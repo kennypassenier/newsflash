@@ -6,9 +6,8 @@ each message as a native Windows toast in Notification Center, with
 working action buttons. Goal (Kenny, 2026-09-24): get notifications
 whether he logs in to Garuda or to Windows, from one subscription.
 
-Built 2026-09-24 on branch `windows-port`. Not yet ratified through the
-dev procedure. The W-series IDs below are proposals in the same style as
-FEATURES.md, pending Kenny's ratification.
+Built 2026-09-24 on branch `windows-port`. Ratified by Kenny on 2026-09-26 (mini-round windows-port form: windows-desktop, live-fields and installers all Akkoord) and merged to `main` via PR #2.
+The feat-win IDs below follow the same style as FEATURES.md.
 
 ## How dual boot and kyu fit together
 
@@ -269,7 +268,7 @@ shell (`images`, `logfile`, `winconfig`). The WinRT/COM shell is
 `cfg(windows)`. The local gate cross-lints it when cargo-xwin is
 installed, and CI's `windows` job builds, lints and tests it natively.
 
-## Windows-port decisions (proposed, for ratification)
+## Windows-port decisions (ratified 2026-09-26)
 
 - **arch-win-1 · One loop, two desktops.** `newsflash::run` now drives a
   `Desktop` trait: `render::LinuxDesktop` (unchanged behaviour, all
