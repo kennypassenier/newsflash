@@ -51,10 +51,148 @@ pub struct Envelope {
     /// an override.
     #[serde(default)]
     pub actions: Option<Vec<ActionDef>>,
-    // tts, click_url and data are deliberately not modeled: speech is the
-    // DLNA channel's job, and the courier never inspects data (no
-    // routing, S9). click_url stays out even with M10 built — pipeline-v2
-    // never asked for it and no automation reads it from the client side.
+    // Windows-port extensions (W-series, docs/WINDOWS.md): optional,
+    // PROPOSED to pipeline-v2, not part of the ratified v1 contract.
+    // The Linux renderer ignores them all. Each one is read leniently —
+    // a wrong-typed extension is dropped, never poison — so no producer
+    // experiment can dead-letter a message that renders fine without it.
+    /// feat-win-5: body click opens this http(s) URL (already in the v1 draft).
+    #[serde(default, deserialize_with = "lenient")]
+    pub click_url: Option<String>,
+    /// feat-win-6: hero image, fetched by the courier (plain http, LAN only).
+    #[serde(default, deserialize_with = "lenient")]
+    pub image: Option<String>,
+    /// feat-win-7: a later toast with the same tag replaces this one in place.
+    #[serde(default, deserialize_with = "lenient")]
+    pub tag: Option<String>,
+    /// feat-win-8: progress bar.
+    #[serde(default, deserialize_with = "lenient")]
+    pub progress: Option<Progress>,
+    /// feat-win-9: text boxes / dropdowns; values ride back on the click.
+    #[serde(default, deserialize_with = "lenient")]
+    pub inputs: Option<Vec<InputDef>>,
+    /// Live pipeline-v2 field (seen on the hub since 2026-08-29): the
+    /// message is short-lived and must not linger in notification
+    /// history. How long it may exist is the config's `ephemeral_minutes`
+    /// unless the message says so itself (`expires_in_minutes`).
+    #[serde(default, deserialize_with = "lenient")]
+    pub ephemeral: Option<bool>,
+    /// feat-win-12 (PROPOSED to pipeline-v2): an explicit lifetime in minutes —
+    /// the desktop drops the notification this long after publishing.
+    #[serde(default, deserialize_with = "lenient")]
+    pub expires_in_minutes: Option<u32>,
+    /// pipeline-v2's channel data. The courier reads exactly one thing
+    /// from it: the action buttons (`data.action_buttons`). Everything
+    /// else in it (lights, speakers, push targets) belongs to other
+    /// channels — no routing here (S9). `tts` is not modeled at all:
+    /// speech is the DLNA channel's job.
+    #[serde(default, deserialize_with = "lenient")]
+    pub data: Option<EnvelopeData>,
+}
+
+/// The part of `data` the courier uses.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct EnvelopeData {
+    #[serde(default, deserialize_with = "lenient")]
+    pub action_buttons: Option<Vec<DataButton>>,
+}
+
+/// pipeline-v2's live button format (the HA companion-app shape):
+/// `{"action": "PLANTCARE_WATER_…", "title": "Water gegeven"}`, plus
+/// the companion app's `uri` for link buttons (`"action": "URI"`).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct DataButton {
+    pub action: String,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub uri: Option<String>,
+}
+
+impl Envelope {
+    /// The buttons this message asks for: the K12 `actions` field when
+    /// present, else pipeline-v2's live `data.action_buttons`, else
+    /// `None` (the renderer falls back to the default Gelezen/Snooze).
+    pub fn effective_actions(&self) -> Option<Vec<ActionDef>> {
+        if let Some(actions) = self.actions.as_ref().filter(|a| !a.is_empty()) {
+            return Some(actions.clone());
+        }
+        let buttons = self
+            .data
+            .as_ref()?
+            .action_buttons
+            .as_ref()
+            .filter(|b| !b.is_empty())?;
+        Some(
+            buttons
+                .iter()
+                .filter(|b| !b.action.trim().is_empty())
+                .map(|b| ActionDef {
+                    id: b.action.clone(),
+                    label: LocalizedText {
+                        nl: Some(b.title.clone()).filter(|t| !t.trim().is_empty()),
+                        en: None,
+                    },
+                    style: None,
+                    url: b
+                        .uri
+                        .clone()
+                        .filter(|_| b.action.eq_ignore_ascii_case("URI")),
+                })
+                .collect(),
+        )
+        .filter(|v: &Vec<ActionDef>| !v.is_empty())
+    }
+}
+
+/// Wrong type → `None` instead of a deserialize error (see the
+/// extension note on `Envelope`).
+fn lenient<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::de::DeserializeOwned,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(serde_json::from_value(value).ok())
+}
+
+/// feat-win-8. `value` is a fraction 0.0–1.0 or the string "indeterminate";
+/// kept as raw JSON so a bad value degrades to indeterminate, not poison.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct Progress {
+    #[serde(default)]
+    pub value: Option<serde_json::Value>,
+    #[serde(default)]
+    pub status: LocalizedText,
+    #[serde(default)]
+    pub title: Option<LocalizedText>,
+    /// Replaces the default "60%" text, e.g. "3/5 files".
+    #[serde(default)]
+    pub label: Option<String>,
+}
+
+/// feat-win-9. `kind` is "text" (default) or "selection".
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct InputDef {
+    pub id: String,
+    #[serde(default, rename = "type")]
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub title: Option<LocalizedText>,
+    #[serde(default)]
+    pub placeholder: Option<LocalizedText>,
+    #[serde(default)]
+    pub choices: Vec<ChoiceDef>,
+    /// Preselected choice id (selection) or prefilled text (text).
+    #[serde(default)]
+    pub default: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct ChoiceDef {
+    pub id: String,
+    #[serde(default)]
+    pub label: LocalizedText,
 }
 
 /// One custom action button (M10). `id` rides back on the click as-is;
@@ -66,6 +204,13 @@ pub struct ActionDef {
     pub id: String,
     #[serde(default)]
     pub label: LocalizedText,
+    /// feat-win-3 (Windows only): "success" (green) or "critical" (red).
+    #[serde(default, deserialize_with = "lenient")]
+    pub style: Option<String>,
+    /// feat-win-4 (Windows only): the button opens this http(s) URL instead of
+    /// replying to `notify.actions`.
+    #[serde(default, deserialize_with = "lenient")]
+    pub url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -234,6 +379,65 @@ mod tests {
         let v: serde_json::Value =
             serde_json::from_str(r#"{"v":1,"id":"y","message":{"en":"m"}}"#).unwrap();
         assert!(parse_from_hub(&HubPayload::Json(v)).is_ok());
+    }
+
+    #[test]
+    fn w_windows_extensions_parse_when_well_formed() {
+        let env = parse_envelope(
+            br#"{"v":1,"id":"x","title":{"nl":"a"},"click_url":"http://ha.local/",
+                "image":"http://ha.local/cam.jpg","tag":"wasmachine",
+                "progress":{"value":0.4,"status":{"nl":"Wassen"}},
+                "inputs":[{"id":"reply","type":"text"}],
+                "actions":[{"id":"ok","style":"success"}],"expires_in_minutes":15}"#,
+        )
+        .unwrap();
+        assert_eq!(env.tag.as_deref(), Some("wasmachine"));
+        assert_eq!(env.expires_in_minutes, Some(15));
+        assert_eq!(env.progress.unwrap().status.nl.as_deref(), Some("Wassen"));
+        assert_eq!(env.inputs.unwrap()[0].id, "reply");
+        assert_eq!(env.actions.unwrap()[0].style.as_deref(), Some("success"));
+    }
+
+    #[test]
+    fn w_a_wrong_typed_extension_is_dropped_never_poison() {
+        let env = parse_envelope(
+            br#"{"v":1,"id":"x","title":{"nl":"a"},"click_url":42,"progress":"half",
+                "inputs":{"not":"a list"},"tag":["x"],"actions":[{"id":"ok","style":7}],
+                "expires_in_minutes":-5}"#,
+        )
+        .unwrap();
+        assert_eq!(env.click_url, None);
+        assert_eq!(env.progress, None);
+        assert_eq!(env.inputs, None);
+        assert_eq!(env.tag, None);
+        assert_eq!(env.expires_in_minutes, None);
+        assert_eq!(env.actions.unwrap()[0].style, None);
+    }
+
+    #[test]
+    fn live_data_action_buttons_become_the_buttons_unless_actions_is_set() {
+        let env = parse_envelope(
+            br#"{"v":1,"id":"x","title":{"nl":"a"},"data":{"action_buttons":[
+                {"action":"PLANTCARE_WATER_x","title":"Water gegeven"},
+                {"action":"URI","title":"Open","uri":"http://ha/x"}],"color":"Blue"}}"#,
+        )
+        .unwrap();
+        let actions = env.effective_actions().unwrap();
+        assert_eq!(actions[0].id, "PLANTCARE_WATER_x");
+        assert_eq!(actions[0].label.nl.as_deref(), Some("Water gegeven"));
+        assert_eq!(actions[1].url.as_deref(), Some("http://ha/x"));
+
+        let both = parse_envelope(
+            br#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[{"id":"k12"}],
+                "data":{"action_buttons":[{"action":"live","title":"L"}]}}"#,
+        )
+        .unwrap();
+        assert_eq!(both.effective_actions().unwrap()[0].id, "k12");
+
+        let empty =
+            parse_envelope(br#"{"v":1,"id":"x","title":{"nl":"a"},"data":{"action_buttons":[]}}"#)
+                .unwrap();
+        assert_eq!(empty.effective_actions(), None);
     }
 
     #[test]

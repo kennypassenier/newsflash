@@ -15,11 +15,144 @@
 //! like the existing sound thread: fire-and-forget from the loop's
 //! perspective, its own failures only ever logged.
 
-use courier_core::toast::ToastSpec;
-use std::io::Read;
-use std::path::Path;
+use crate::config::Config;
+use crate::hub_client::HubClient;
+use crate::logx;
+use crate::run::{AfterAck, Desktop, publish_action_result};
+use courier_core::envelope::Envelope;
+use courier_core::hub::HubMessage;
+use courier_core::toast::{
+    Language, Lifetimes, ToastSpec, actions_are_truncated, interactive_wait_cap_ms,
+    lifetime_minutes, resolve_link, toast_spec,
+};
+use std::io::{BufRead, BufReader, Read};
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
+
+/// The Linux half of `run::Desktop`: notify-send toasts (K2/M10), the
+/// busctl daemon probe (AR22) and the paplay chime (K6).
+pub struct LinuxDesktop {
+    client: HubClient,
+    language: Language,
+    sound_file: Option<PathBuf>,
+    interactive_wait_margin_ms: u32,
+    lifetimes: Lifetimes,
+    link_base_url: Option<String>,
+}
+
+/// The freedesktop action a server fires for a click on the body itself
+/// (Plasma draws no button for it).
+const DEFAULT_ACTION: &str = "default";
+
+impl LinuxDesktop {
+    pub fn new(config: &Config) -> Self {
+        LinuxDesktop {
+            client: HubClient::new(config),
+            language: config.language,
+            sound_file: config.sound_file.clone(),
+            interactive_wait_margin_ms: config.interactive_wait_margin_ms,
+            lifetimes: config.lifetimes,
+            link_base_url: config.link_base_url.clone(),
+        }
+    }
+}
+
+impl Desktop for LinuxDesktop {
+    fn ready(&mut self) -> bool {
+        daemon_present()
+    }
+
+    fn hold_reason(&self) -> String {
+        "no notification daemon on the session bus — holding, not consuming".into()
+    }
+
+    fn ready_line(&self) -> &'static str {
+        "notification daemon present"
+    }
+
+    fn show(&mut self, message: &HubMessage, env: &Envelope) -> Result<AfterAck, String> {
+        if actions_are_truncated(env) {
+            logx::warn(&format!(
+                "{}: more than {} actions on the envelope — only the first {} are shown (M10)",
+                message.id,
+                courier_core::toast::MAX_ACTIONS,
+                courier_core::toast::MAX_ACTIONS
+            ));
+        }
+        let mut spec = toast_spec(env, self.language);
+        // Clicking the notification itself opens click_url, when there is
+        // one we may open (full http(s), or a path + link_base_url).
+        let link = env
+            .click_url
+            .as_deref()
+            .and_then(|u| resolve_link(u, self.link_base_url.as_deref()));
+        if link.is_some() {
+            spec.actions
+                .push((DEFAULT_ACTION.to_string(), "Openen".to_string()));
+        }
+        // Link buttons (`url`, or the companion app's `"action": "URI"`)
+        // open their page instead of replying to notify.actions.
+        let link_buttons: Vec<(String, String)> = env
+            .effective_actions()
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|a| {
+                let url = resolve_link(a.url.as_deref()?, self.link_base_url.as_deref())?;
+                Some((a.id, url))
+            })
+            .collect();
+        // Ephemeral / per-priority lifetime: counted from publishing, so
+        // time spent waiting at the hub counts too.
+        let close_after = lifetime_minutes(env, &self.lifetimes).map(|m| {
+            let end = message.published_at_ms + u64::from(m) * 60_000;
+            Duration::from_millis(end.saturating_sub(crate::run::now_ms()).max(1_000))
+        });
+        let child = show_toast_with(&spec, close_after.is_some())?;
+
+        let sound = self.sound_file.clone();
+        let max_wait = interactive_wait_cap_ms(spec.expire_ms, self.interactive_wait_margin_ms)
+            .map(|ms| Duration::from_millis(ms as u64));
+        let payload_id = env.id.clone();
+        let ack_id = env.ack_id.clone();
+        let hub_id = message.id.clone();
+        let watcher_client = self.client.clone();
+        Ok(Box::new(move || {
+            if let Some(sound) = &sound {
+                play_sound(sound);
+            }
+            watch_toast(child, max_wait, close_after, move |action| {
+                let Some(action_id) = action else {
+                    logx::info(&format!(
+                        "{hub_id}: toast dismissed or timed out, no action chosen"
+                    ));
+                    return;
+                };
+                if let Some((_, url)) = link_buttons.iter().find(|(id, _)| *id == action_id) {
+                    logx::info(&format!("{hub_id}: opened {url}"));
+                    let _ = Command::new("xdg-open").arg(url).spawn();
+                    return;
+                }
+                if action_id == DEFAULT_ACTION {
+                    if let Some(link) = &link {
+                        logx::info(&format!("{hub_id}: opened {link}"));
+                        let _ = Command::new("xdg-open").arg(link).spawn();
+                    }
+                    return;
+                }
+                logx::info(&format!("{hub_id}: action {action_id:?} chosen"));
+                publish_action_result(
+                    &watcher_client,
+                    &hub_id,
+                    &payload_id,
+                    ack_id.as_deref(),
+                    &action_id,
+                    &[],
+                );
+            });
+        }))
+    }
+}
 
 pub const CHILD_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -66,8 +199,13 @@ pub fn run_with_timeout(mut cmd: Command, timeout: Duration) -> RunOutcome {
     }
 }
 
-fn build_toast_command(spec: &ToastSpec) -> Command {
+fn build_toast_command(spec: &ToastSpec, print_id: bool) -> Command {
     let mut cmd = Command::new("notify-send");
+    if print_id {
+        // First stdout line = the notification id, needed to close it
+        // when its lifetime ends (ephemeral / expire_*_minutes).
+        cmd.arg("--print-id");
+    }
     cmd.arg("--app-name=newsflash")
         .arg(format!("--urgency={}", spec.urgency.as_notify_send_arg()))
         .arg(format!("--expire-time={}", spec.expire_ms))
@@ -93,7 +231,13 @@ fn build_toast_command(spec: &ToastSpec) -> Command {
 /// (or, for a near-instant expiry, already-finished) process whose
 /// stdout the caller reads later via `watch_interactive_toast`.
 pub fn show_toast_interactive(spec: &ToastSpec) -> Result<Child, String> {
-    let mut cmd = build_toast_command(spec);
+    show_toast_with(spec, false)
+}
+
+/// `show_toast_interactive`, optionally asking notify-send to print the
+/// notification id first (for `watch_toast`'s `close_after`).
+pub fn show_toast_with(spec: &ToastSpec, print_id: bool) -> Result<Child, String> {
+    let mut cmd = build_toast_command(spec, print_id);
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
@@ -124,8 +268,87 @@ pub fn show_toast_interactive(spec: &ToastSpec) -> Result<Child, String> {
 /// failure — each logged separately here, not distinguished for the
 /// caller since none of them are the caller's problem to settle).
 pub fn watch_interactive_toast(
+    child: Child,
+    max_wait: Option<Duration>,
+    on_result: impl FnOnce(Option<String>) + Send + 'static,
+) {
+    watch_toast(child, max_wait, None, on_result);
+}
+
+/// Closes notification `id` on the session bus: gone from the screen
+/// and from the server's history (the ephemeral promise).
+pub fn close_notification(id: u32) -> RunOutcome {
+    let mut cmd = Command::new("busctl");
+    cmd.args([
+        "--user",
+        "--timeout=5",
+        "call",
+        "org.freedesktop.Notifications",
+        "/org/freedesktop/Notifications",
+        "org.freedesktop.Notifications",
+        "CloseNotification",
+        "u",
+    ])
+    .arg(id.to_string());
+    run_with_timeout(cmd, Duration::from_secs(6))
+}
+
+/// `watch_interactive_toast` plus a lifetime: with `close_after`, the
+/// child must have been started with `print_id` — its first stdout line
+/// is the id, and a timer closes that notification when the lifetime
+/// ends (whether it is still on screen or already in history). The
+/// click, if any, is read from the lines after the id.
+pub fn watch_toast(
     mut child: Child,
     max_wait: Option<Duration>,
+    close_after: Option<Duration>,
+    on_result: impl FnOnce(Option<String>) + Send + 'static,
+) {
+    let Some(lifetime) = close_after else {
+        return watch_plain(child, max_wait, on_result);
+    };
+    let Some(stdout) = child.stdout.take() else {
+        return watch_plain(child, max_wait, on_result);
+    };
+    // Reads the id at once (to arm the timer), then whatever follows.
+    let reader = std::thread::spawn(move || {
+        let mut lines = BufReader::new(stdout).lines();
+        let id = lines
+            .next()
+            .and_then(Result::ok)
+            .and_then(|l| l.trim().parse::<u32>().ok());
+        match id {
+            Some(id) => {
+                std::thread::spawn(move || {
+                    std::thread::sleep(lifetime);
+                    if let RunOutcome::Failed(reason) = close_notification(id) {
+                        crate::logx::warn(&format!(
+                            "could not close expired notification {id} ({reason})"
+                        ));
+                    }
+                });
+            }
+            None => crate::logx::warn(
+                "notify-send printed no notification id — this toast cannot expire early",
+            ),
+        }
+        lines.map_while(Result::ok).collect::<Vec<_>>().join("\n")
+    });
+    watch_with_reader(child, max_wait, Some(reader), on_result);
+}
+
+fn watch_plain(
+    child: Child,
+    max_wait: Option<Duration>,
+    on_result: impl FnOnce(Option<String>) + Send + 'static,
+) {
+    watch_with_reader(child, max_wait, None, on_result);
+}
+
+fn watch_with_reader(
+    mut child: Child,
+    max_wait: Option<Duration>,
+    reader: Option<std::thread::JoinHandle<String>>,
     on_result: impl FnOnce(Option<String>) + Send + 'static,
 ) {
     std::thread::spawn(move || {
@@ -155,8 +378,13 @@ pub fn watch_interactive_toast(
             }
         }
         let mut out = String::new();
-        if let Some(mut stdout) = child.stdout.take() {
-            let _ = stdout.read_to_string(&mut out);
+        match reader {
+            Some(r) => out = r.join().unwrap_or_default(),
+            None => {
+                if let Some(mut stdout) = child.stdout.take() {
+                    let _ = stdout.read_to_string(&mut out);
+                }
+            }
         }
         let action = out.trim();
         on_result(if action.is_empty() {

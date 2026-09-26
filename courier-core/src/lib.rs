@@ -10,3 +10,4 @@ pub mod envelope;
 pub mod hub;
 pub mod settle;
 pub mod toast;
+pub mod wintoast;

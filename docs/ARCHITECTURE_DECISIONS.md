@@ -476,3 +476,59 @@ or closes around it. See `docs/DRILL_LOG.md` for the full live-drill
 trail (the 300-message flood, the button-count ladder, and the
 three-mechanism isolation tests) and `docs/SCOPE.md` S6f for the
 success-criteria-facing version of this note.
+
+## Amendment 2026-09-24 — Windows twin, installers, and the live message fields
+
+Ratified by Kenny on 2026-09-26 (mini-round windows-port form: windows-desktop, live-fields and installers all Akkoord) and merged to `main` via PR #2. Windows-
+specific decisions are arch-win-1–arch-win-7 in `docs/WINDOWS.md`; cohesion
+proposals to the other systems are in `docs/PROPOSALS.md`.
+
+### arch-1 · One loop, two desktops
+`run.rs` drives a `Desktop` trait (`ready` / `hold_reason` / `show`,
+with a hook that runs after the ack). `render::LinuxDesktop` keeps every
+Linux behaviour and log line (all existing tests unchanged and green);
+`newsflash-win` implements the same trait with WinRT toasts. Settle,
+dedup, TTL, backoff, archive recovery and the policy assertion are
+therefore shared, so the two OSes cannot drift apart on the one
+`desktop` subscription.
+
+### AR27 revision · The button cap is 5, and live `data.action_buttons` count
+Live messages carry pipeline-v2's buttons as `data.action_buttons`
+(`{action, title}`), up to 3 (plant care), not K12's top-level
+`actions`. `Envelope::effective_actions` takes `actions` if present,
+else `data.action_buttons`, else the default pair. The cap moves from 2
+to **5 on both desktops** (Windows' limit; Plasma measured at 20 in
+D3). Beyond it: truncate and log, as before.
+
+### arch-2 · `data` is read for its buttons, nothing else
+S9's "the courier never inspects data" gets one exception: the buttons.
+Every other `data` key (lights, speakers, push targets, colour) belongs
+to other channels and stays unread. Routing stays upstream.
+
+### arch-3 · Lifetimes: `ephemeral` and per-priority expiry, both desktops
+The most specific lifetime wins: a message's own `expires_in_minutes`
+(proposed, ask-1), then `ephemeral: true` → `ephemeral_minutes` (default
+10), then `expire_<priority>_minutes`, else the desktop default. The
+lifetime is counted from publishing. Windows sets
+`ToastNotification.ExpirationTime`. Linux asks notify-send for the id
+(`--print-id`, only when a lifetime applies, so other argv is
+unchanged) and closes it over D-Bus (`CloseNotification`) when the
+lifetime ends, whether it is on screen or in history.
+
+### arch-4 · Links: `click_url` is built, http(s) only
+M10's old "click_url stays out" is reversed: live messages use it. A
+body click opens it. On Windows that's a protocol launch; on Linux it's
+the freedesktop `default` action, which Plasma fires on a body click,
+followed by `xdg-open`. Path links (`/control-panel/…`) resolve against
+`link_base_url`. Only http(s) is ever opened, so a message can't
+launch other protocol handlers.
+
+### arch-5 · Installers and one wizard
+`newsflash install` / `uninstall` exist on both OSes, and a GUI wizard
+(`newsflash-setup`, egui) sits on top, with the same pages on both
+OSes. On Linux the PATH is changed only through removable drop-ins
+(`environment.d`, `fish/conf.d`, a marked block in `.bashrc`/`.zshrc`),
+and uninstall removes exactly those. On Windows: the user PATH, the Run
+key, the COM activator, a Start menu `.lnk`, and an Installed apps
+entry (HKCU only, no admin). The config is edited line by line, so
+comments survive (`config_edit`).

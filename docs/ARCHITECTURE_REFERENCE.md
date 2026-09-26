@@ -11,7 +11,7 @@ notify.kenny topic (kyu hub, LXC 109)
         │  long-poll GET /t/notify.kenny/next?as=desktop&envelope=json&wait=20
         ▼
 ┌─ newsflash (systemd user service, Garuda PC) ─────────────┐
-│ run.rs        the one loop: poll → settle → repeat           │
+│ run.rs        the one loop: poll → settle → repeat (Desktop) │
 │ hub_client.rs HTTP shell (ureq, AR19 timeouts)               │
 │ render.rs     notify-send / paplay / busctl via PATH         │
 │ state.rs      ~/.local/state/newsflash/seen.json (atomic) │
@@ -21,6 +21,18 @@ notify.kenny topic (kyu hub, LXC 109)
                ▼
         KDE Plasma notification daemon (toast)
 ```
+
+Since 2026-09-24 the workspace has four crates:
+- `courier-core`: pure logic, including `wintoast` (Windows toast XML)
+  and the shared rules for lifetimes, links and buttons;
+- `newsflash`: the Linux binary, and the shared shell (loop, hub
+  client, config, `config_edit`, `install`, `setup`);
+- `newsflash-win`: the Windows desktop (WinRT toasts, COM click
+  activator, registry, DPAPI);
+- `newsflash-setup`: the wizard UI, which both binaries plug into.
+
+`render::LinuxDesktop` and `newsflash_win::toast::WinDesktop` are the
+two implementations of `run::Desktop` (arch-1).
 
 `courier-core` (separate crate, zero ambient I/O — enforced by gate
 and CI) holds everything decidable without the world: envelope

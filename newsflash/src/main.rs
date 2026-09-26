@@ -1,11 +1,16 @@
 //! newsflash — renders messages from the kyu hub's
 //! `notify.kenny` topic as desktop toasts. See docs/SCOPE.md.
 
-use newsflash::{config, logx, run, send_test};
+use newsflash::{config, install, logx, run, send_test};
 use std::path::PathBuf;
 
 const USAGE: &str = "usage:
   newsflash [--config <path>]                    run the courier
+  newsflash setup                                the install wizard (opens a window)
+  newsflash install                              copy to ~/.local/bin, add it to PATH,
+                                                 install + start the systemd user unit
+  newsflash uninstall                            stop, remove the unit, the PATH entry
+                                                 and the installed binary (config kept)
   newsflash send-test [--config <path>]
                [--title T] [--message M] [--priority info|warning|critical]
   newsflash --version";
@@ -19,6 +24,16 @@ fn main() {
     if args.iter().any(|a| a == "--help" || a == "-h") {
         println!("{USAGE}");
         return;
+    }
+
+    // Before any config is loaded: install is what creates the config.
+    match args.first().map(String::as_str) {
+        Some("install") => std::process::exit(install::install(&install::Layout::from_env())),
+        Some("uninstall") => std::process::exit(install::uninstall(&install::Layout::from_env())),
+        Some("setup") => std::process::exit(newsflash::setup::run(
+            args.get(1).map(String::as_str) == Some("uninstall"),
+        )),
+        _ => {}
     }
 
     let mut config_path: Option<PathBuf> = None;

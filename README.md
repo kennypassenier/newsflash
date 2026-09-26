@@ -16,9 +16,35 @@ every failure mode degrades to exactly "no toasts".
 > retired `hub-clients` (deleted, history kept in this repo's log).
 > Full build/architecture/hardening record: `docs/`.
 
+## What a notification can do
+
+- **Buttons:** the message's own (`data.action_buttons` as HA sends
+  them, or K12 `actions`), up to 5, else Gelezen/Snooze. A click
+  publishes an `action_result` to `notify.actions`.
+- **Short-lived:** `ephemeral` messages disappear after
+  `ephemeral_minutes` (default 10); optional expiry per priority.
+- **Links:** clicking the notification opens its `click_url`. Paths
+  need `link_base_url`.
+
+Proposals to make pipeline-v2, HA, kyu and newsflash one cohesive
+system: `docs/PROPOSALS.md`.
+
+## Windows 11 (dual boot)
+
+`newsflash-win` consumes the **same** `desktop` subscription on
+Windows 11 and renders native toasts in Notification Center, with action
+buttons, inputs, images and live progress. Whichever OS is booted gets
+the notifications. See `docs/WINDOWS.md`; in short:
+`newsflash-win.exe install`, set `hub_url`, `newsflash set-token`,
+`newsflash install`, then `newsflash demo`.
+
 ## Quick start
 
-See `docs/OPERATIONS_RUNBOOK.md` R1 for the numbered install. In short:
+Easiest: `cargo build --release -p newsflash && ./target/release/newsflash setup`
+opens the install wizard (same on Windows, `docs/SETUP.md`). Without a window:
+`./target/release/newsflash install`
+(binary to `~/.local/bin`, PATH, systemd unit; `newsflash uninstall`
+reverses it). See `docs/OPERATIONS_RUNBOOK.md` R1 for the numbered install. Manually:
 `cargo install --path newsflash`, copy `config.example.toml` to
 `~/.config/newsflash/config.toml`, provide `KYU_TOKEN` via
 `latch run` (or a 0600 `token_file`), install the systemd user unit

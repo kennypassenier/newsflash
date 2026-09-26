@@ -56,3 +56,14 @@ that idea for good on 2026-08-30 (SCOPE non-goal S8).
 **Frozen 2026-08-29** — ratified by Kenny (ratification form F2,
 Akkoord, same day; M5/M6/M7 decisions ratified as F3/F4/F5, the K6
 default-off as F6). Changes from here go through mini-rounds only.
+
+## Round 3 — 2026-09-24 (ratified 2026-09-26, mini-round windows-port)
+
+| ID | Feature | Rating | Test expectation |
+|---|---|---|---|
+| feat-1 | Windows 11 desktop (`newsflash-win`) on the same `desktop` subscription. Details: feat-win-1–feat-win-12 and arch-win-1–arch-win-7 in `docs/WINDOWS.md` | Essential | `wintoast` unit tests (on any OS); Windows crate tests run natively; live drill with real clicks (2026-09-24) |
+| feat-2 | `newsflash install` / `uninstall` on Linux: binary to `~/.local/bin`, removable PATH drop-ins, systemd unit, app-menu entry | Essential | `newsflash/tests/install_tests.rs` (temporary HOME, shimmed systemctl) |
+| feat-3 | Setup wizard on both OSes (`newsflash setup`): hub and token checked before anything is written | Desired | `newsflash-setup/src/tests.rs` (headless egui_kittest) + backend tests |
+| feat-4 | Live button format `data.action_buttons`; cap 5 on both desktops (AR27 revision, arch-2) | Essential | core tests incl. the pinned live plant-care vector |
+| feat-5 | Lifetimes: `ephemeral` → `ephemeral_minutes`, `expire_<priority>_minutes`, proposed `expires_in_minutes` (arch-3) | Essential | core lifetime tests; Linux close-by-id render test; Windows `ExpirationTime` via the builder tests |
+| feat-6 | `click_url` opens on a body click; path links via `link_base_url` (arch-4) | Desired | `resolve_link` tests; builder tests |

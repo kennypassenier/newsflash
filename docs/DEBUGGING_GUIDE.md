@@ -32,6 +32,7 @@ strings from `run.rs`/`logx.rs`.
 | `subscription was archived … unarchiving` | PC off ≥30 days | self-heals; the lapsed backlog was disposable (10-min TTL) |
 | `no notification daemon on the session bus — holding` | notification service not up (login race) or crashed | courier holds without consuming; messages wait under the TTL; restart plasmashell or relogin |
 | quiet polling, nothing else | healthy and idle | `send-test` to prove the chain |
+| `hub answered 429 (… rate limit …)` | something else is using the same app token hard (seen 2026-09-24 during a bulk read) | self-heals on backoff; give bulk tools their own token |
 
 ### A specific message never toasted
 
@@ -49,6 +50,23 @@ strings from `run.rs`/`logx.rs`.
 | English text though language is nl | the envelope carried no `nl` translation — fallback (M3) is deliberate; fix the producer |
 | `…` at the end | truncation budget (200/1000 chars, AR4) |
 | literal `&amp;`-style text | producer pre-escaped its content; the courier escapes exactly once |
+
+### A notification disappeared by itself
+
+Its lifetime ended (arch-3). Either the message was `ephemeral` (gone
+after `ephemeral_minutes`, default 10), or an `expire_<priority>_minutes`
+is set, or the message carried `expires_in_minutes`. On Linux the
+journal shows `could not close expired notification …` only when that
+failed.
+
+### A button or link does nothing
+
+- Buttons publish to `notify.actions`. Check the journal for
+  `action "…" chosen` and `action_result … published`. If those are
+  there, the rest is Home Assistant's part.
+- A link that is only a path (`/control-panel/…`) needs `link_base_url`.
+- On Windows, clicks need the courier running (the COM activator lives
+  in it; see `docs/WINDOWS.md`, "Action buttons").
 
 ### Duplicate toast
 

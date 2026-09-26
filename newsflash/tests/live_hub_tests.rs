@@ -65,6 +65,8 @@ fn config_for(hub: &ScratchHub) -> Config {
         sound_file: None,
         token: "unused-open-hub".into(),
         interactive_wait_margin_ms: 30_000,
+        lifetimes: Default::default(),
+        link_base_url: None,
     }
 }
 

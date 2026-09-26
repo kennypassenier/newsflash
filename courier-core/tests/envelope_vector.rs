@@ -42,3 +42,42 @@ fn ar4_the_pinned_vector_maps_to_the_expected_toast() {
         }
     );
 }
+
+/// Two REAL messages read from the hub on 2026-09-24 (docs/PROPOSALS.md).
+/// If pipeline-v2 changes how it sends buttons or ephemerality, these
+/// fail first — the same tripwire role as the v1 draft vector above.
+#[test]
+fn live_plant_care_message_keeps_its_three_buttons() {
+    let env = parse_envelope(include_bytes!("vectors/live_2026-09_action_buttons.json")).unwrap();
+    let ids: Vec<String> = env
+        .effective_actions()
+        .unwrap()
+        .into_iter()
+        .map(|a| a.id)
+        .collect();
+    assert_eq!(ids.len(), 3);
+    assert!(ids[0].starts_with("PLANTCARE_WATER_"));
+    assert!(ids[2].starts_with("PLANTCARE_SKIP_"));
+    let spec = toast_spec(&env, Language::Nl);
+    assert_eq!(spec.actions[1].1, "Snooze 3 dagen");
+    assert_eq!(
+        courier_core::toast::resolve_link(
+            env.click_url.as_deref().unwrap(),
+            Some("http://10.10.10.2:8123")
+        )
+        .as_deref(),
+        Some("http://10.10.10.2:8123/control-panel/plants")
+    );
+}
+
+#[test]
+fn live_ephemeral_message_lives_ten_minutes_by_default() {
+    let env = parse_envelope(include_bytes!("vectors/live_2026-09_ephemeral.json")).unwrap();
+    assert_eq!(env.ephemeral, Some(true));
+    assert_eq!(
+        courier_core::toast::lifetime_minutes(&env, &Default::default()),
+        Some(10)
+    );
+    // No buttons of its own → the default pair.
+    assert_eq!(toast_spec(&env, Language::Nl).actions[0].0, "gelezen");
+}

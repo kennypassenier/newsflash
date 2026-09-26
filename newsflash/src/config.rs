@@ -2,7 +2,7 @@
 //! the field and the remedy; the token never comes from the config
 //! file itself.
 
-use courier_core::toast::Language;
+use courier_core::toast::{Language, Lifetimes, MAX_LIFETIME_MINUTES, resolve_link};
 use std::path::{Path, PathBuf};
 
 pub const DEFAULT_TTL_MINUTES: u64 = 10;
@@ -27,6 +27,11 @@ pub struct Config {
     pub sound_file: Option<PathBuf>,
     pub token: String,
     pub interactive_wait_margin_ms: u32,
+    /// How long notifications may exist (ephemeral + per priority).
+    pub lifetimes: Lifetimes,
+    /// Base for path-only links (`/control-panel/homelab` → Home
+    /// Assistant). `None` = such links are not offered.
+    pub link_base_url: Option<String>,
 }
 
 pub fn default_path() -> PathBuf {
@@ -50,6 +55,11 @@ struct RawConfig {
     sound_file: Option<String>,
     token: Option<String>,
     token_file: Option<String>,
+    ephemeral_minutes: Option<u32>,
+    expire_info_minutes: Option<u32>,
+    expire_warning_minutes: Option<u32>,
+    expire_critical_minutes: Option<u32>,
+    link_base_url: Option<String>,
 }
 
 /// Errors are full sentences with remedies (standing rule 11) — they
@@ -141,6 +151,33 @@ pub fn load(path: &Path) -> Result<Config, String> {
         .interactive_wait_margin_ms
         .unwrap_or(DEFAULT_INTERACTIVE_WAIT_MARGIN_MS);
 
+    let minutes = |key: &str, v: Option<u32>| -> Result<Option<u32>, String> {
+        match v {
+            Some(m) if !(1..=MAX_LIFETIME_MINUTES).contains(&m) => Err(format!(
+                "{key} = {m} is out of range. Use 1 to {MAX_LIFETIME_MINUTES} minutes \
+                 (Windows keeps a notification 3 days at most), or remove the key."
+            )),
+            other => Ok(other),
+        }
+    };
+    let lifetimes = Lifetimes {
+        ephemeral: minutes("ephemeral_minutes", raw.ephemeral_minutes)?
+            .unwrap_or(courier_core::toast::DEFAULT_EPHEMERAL_MINUTES),
+        info: minutes("expire_info_minutes", raw.expire_info_minutes)?,
+        warning: minutes("expire_warning_minutes", raw.expire_warning_minutes)?,
+        critical: minutes("expire_critical_minutes", raw.expire_critical_minutes)?,
+    };
+    let link_base_url = match raw.link_base_url {
+        None => None,
+        Some(u) if resolve_link(&u, None).is_some() => Some(u.trim_end_matches('/').to_string()),
+        Some(u) => {
+            return Err(format!(
+                "link_base_url {u:?} is not a full http(s) address. Set it to where \
+                 path-only links live (Home Assistant: \"http://10.10.10.2:8123\"), or remove it."
+            ));
+        }
+    };
+
     Ok(Config {
         hub_url,
         topic,
@@ -150,6 +187,8 @@ pub fn load(path: &Path) -> Result<Config, String> {
         sound_file,
         token,
         interactive_wait_margin_ms,
+        lifetimes,
+        link_base_url,
     })
 }
 

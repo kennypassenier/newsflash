@@ -165,6 +165,25 @@ impl HubClient {
         })
     }
 
+    /// Setup wizard: can this token reach the hub? Read-only (a policy
+    /// GET — never a receive, which would claim a message). 404 = the
+    /// topic has never been published to yet: reachable and authorised.
+    pub fn check_access(&self) -> Result<(), HubCallError> {
+        let url = format!(
+            "{}/api/t/{}/subs/{}/policy",
+            self.base, self.topic, self.subscription
+        );
+        match self.ops.get(&url).set("authorization", &self.auth).call() {
+            Ok(_) => Ok(()),
+            Err(e) => match map_err(e) {
+                HubCallError {
+                    status: Some(404), ..
+                } => Ok(()),
+                other => Err(other),
+            },
+        }
+    }
+
     /// AR21: revive an archived subscription, loudly (caller logs).
     pub fn unarchive(&self) -> Result<(), HubCallError> {
         let url = format!(

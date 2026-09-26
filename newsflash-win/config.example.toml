@@ -1,0 +1,47 @@
+# newsflash (Windows) configuration — %APPDATA%\newsflash\config.toml
+# Same format as the Linux config (~/.config/newsflash/config.toml):
+# keep topic, subscription and ttl_minutes IDENTICAL on both OSes — they
+# consume the one `desktop` subscription, and a different ttl would make
+# each boot overwrite the other's policy (AR7).
+#
+# The token is NOT configured here (AR10): run `newsflash set-token`
+# (DPAPI-encrypted, this Windows account only), or set KYU_TOKEN.
+
+# The kyu hub. Live hub: "http://10.10.10.9:8080".
+hub_url = "http://127.0.0.1:8080"
+
+# Defaults shown; omit any line to keep the default.
+#topic = "notify.kenny"
+#subscription = "desktop"
+#language = "nl"
+#ttl_minutes = 10
+
+# Windows only — how a `critical` toast behaves:
+#   "reminder" (default) stays on screen until you answer
+#   "urgent"   breaks through Do Not Disturb (Windows asks once to allow it)
+#   "alarm"    like reminder, plus a looping alarm sound
+#critical_scenario = "reminder"
+
+# Optional chime instead of the Windows notification sound (K6).
+# Must be a .wav file (Windows plays it with PlaySound).
+#sound_file = 'C:\Users\Kenny\Music\chimes\soft-ping.wav'
+
+# Fallback token source when neither KYU_TOKEN nor `set-token` is used:
+# a plain file holding the app token from the hub's /apps page.
+#token_file = 'C:\Users\Kenny\AppData\Roaming\newsflash\token'
+
+# How long a notification may exist, in minutes (same keys on Linux).
+# Messages the sender marks `ephemeral` (e.g. the "Beweging" door
+# reminders) disappear from Notification Center this long after they
+# were sent. Default 10.
+#ephemeral_minutes = 10
+# Per priority, for all other messages. Omit = Windows' own default
+# (a notification stays up to 3 days in Notification Center).
+#expire_info_minutes = 60
+#expire_warning_minutes = 240
+#expire_critical_minutes = 1440
+
+# Where path-only links from pipeline-v2 point (click_url
+# "/control-panel/homelab" is a Home Assistant dashboard). Omit = such
+# links are not offered; full http(s) links always work.
+link_base_url = "http://10.10.10.2:8123"

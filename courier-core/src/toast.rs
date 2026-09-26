@@ -58,10 +58,79 @@ pub struct ToastSpec {
 /// pipeline-v2's contract spells these two words exactly.
 pub const DEFAULT_ACTIONS: [(&str, &str); 2] = [("gelezen", "Gelezen"), ("snooze", "Snooze")];
 
-/// M10: producer-supplied actions beyond the first 2 are dropped — the
+/// Buttons shown at most, on both desktops. Was 2 (K12's "max 2");
+/// raised to 5 on 2026-09-24 because pipeline-v2's live messages carry 3
+/// (plant care: Water gegeven / Snooze 3 dagen / Nog te nat), Windows
+/// allows 5, and Plasma was measured rendering 20 (D3, labels blur past
+/// ~6-8). One number for both OSes.
+pub const MAX_ACTIONS: usize = 5;
+
+/// M10: producer-supplied actions beyond `MAX_ACTIONS` are dropped — the
 /// caller (which has logging) should warn when this returns true.
 pub fn actions_are_truncated(env: &Envelope) -> bool {
-    env.actions.as_ref().is_some_and(|a| a.len() > 2)
+    env.effective_actions()
+        .is_some_and(|a| a.len() > MAX_ACTIONS)
+}
+
+/// How long a notification may exist (config, shared by both desktops).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Lifetimes {
+    /// For `ephemeral: true` messages without their own lifetime.
+    pub ephemeral: u32,
+    /// Per priority; `None` = the desktop's own default (Windows keeps a
+    /// toast 3 days, Plasma keeps history until cleared).
+    pub info: Option<u32>,
+    pub warning: Option<u32>,
+    pub critical: Option<u32>,
+}
+
+pub const DEFAULT_EPHEMERAL_MINUTES: u32 = 10;
+/// Windows keeps a toast at most 3 days; a longer lifetime means nothing.
+pub const MAX_LIFETIME_MINUTES: u32 = 3 * 24 * 60;
+
+impl Default for Lifetimes {
+    fn default() -> Self {
+        Lifetimes {
+            ephemeral: DEFAULT_EPHEMERAL_MINUTES,
+            info: None,
+            warning: None,
+            critical: None,
+        }
+    }
+}
+
+/// Minutes this message may exist after publishing, most specific
+/// first: the message's own `expires_in_minutes`, then `ephemeral`,
+/// then the config for its priority. Clamped to 1 minute … 3 days.
+pub fn lifetime_minutes(env: &Envelope, lifetimes: &Lifetimes) -> Option<u32> {
+    let per_priority = match env.priority.as_deref() {
+        Some("critical") => lifetimes.critical,
+        Some("warning") => lifetimes.warning,
+        _ => lifetimes.info,
+    };
+    let minutes = env
+        .expires_in_minutes
+        .or((env.ephemeral == Some(true)).then_some(lifetimes.ephemeral))
+        .or(per_priority)?;
+    Some(minutes.clamp(1, MAX_LIFETIME_MINUTES))
+}
+
+/// A link a notification may open. Absolute http(s) URLs as they are;
+/// a path (`/control-panel/homelab`, as pipeline-v2 sends today) only
+/// when a `link_base_url` is configured to resolve it against.
+pub fn resolve_link(url: &str, base: Option<&str>) -> Option<String> {
+    let url = url.trim();
+    let full = if url.starts_with('/') {
+        format!("{}{url}", base?.trim_end_matches('/'))
+    } else {
+        url.to_string()
+    };
+    let lower = full.to_ascii_lowercase();
+    ((lower.starts_with("http://") || lower.starts_with("https://"))
+        && full.len() > "http://".len()
+        && full.len() <= 2048
+        && !full.chars().any(|c| c.is_whitespace() || c.is_control()))
+    .then_some(full)
 }
 
 /// M10 safety-cap policy (standing rule 27 — the margin is the
@@ -82,10 +151,10 @@ pub fn interactive_wait_cap_ms(expire_ms: u32, margin_ms: u32) -> Option<u32> {
 }
 
 fn resolve_actions(env: &Envelope, lang: Language) -> Vec<(String, String)> {
-    match env.actions.as_ref().filter(|a| !a.is_empty()) {
+    match env.effective_actions() {
         Some(defs) => defs
             .iter()
-            .take(2)
+            .take(MAX_ACTIONS)
             .map(|d: &ActionDef| {
                 let label = pick(Some(&d.label), lang).unwrap_or_else(|| d.id.clone());
                 (d.id.clone(), label)
@@ -98,7 +167,9 @@ fn resolve_actions(env: &Envelope, lang: Language) -> Vec<(String, String)> {
     }
 }
 
-fn pick(text: Option<&LocalizedText>, lang: Language) -> Option<String> {
+/// Language pick with cross-language fallback (M3). Public so the
+/// Windows toast builder resolves text exactly the same way.
+pub fn pick(text: Option<&LocalizedText>, lang: Language) -> Option<String> {
     let t = text?;
     let (first, second) = match lang {
         Language::Nl => (&t.nl, &t.en),
@@ -137,7 +208,7 @@ fn icon_for(priority: Option<&str>) -> &'static str {
 pub const SUMMARY_MAX_CHARS: usize = 200;
 pub const BODY_MAX_CHARS: usize = 1000;
 
-fn truncate(s: &str, max_chars: usize) -> String {
+pub fn truncate(s: &str, max_chars: usize) -> String {
     if s.chars().count() <= max_chars {
         return s.to_owned();
     }
@@ -155,10 +226,12 @@ fn escape_markup(s: &str) -> String {
         .replace('>', "&gt;")
 }
 
-/// Only call with a parse-validated envelope: `parse_envelope`
-/// guarantees at least one renderable text, so this cannot come up
-/// empty. Title missing → the message text becomes the summary.
-pub fn toast_spec(env: &Envelope, lang: Language) -> ToastSpec {
+/// (summary, body), truncated but NOT escaped — each renderer applies
+/// its own escaping. Only call with a parse-validated envelope:
+/// `parse_envelope` guarantees at least one renderable text, so this
+/// cannot come up empty. Title missing → the message text becomes the
+/// summary.
+pub fn resolve_texts(env: &Envelope, lang: Language) -> (String, String) {
     let title = pick(env.title.as_ref(), lang);
     let message = pick(env.message.as_ref(), lang);
     let (summary, body) = match (title, message) {
@@ -167,10 +240,18 @@ pub fn toast_spec(env: &Envelope, lang: Language) -> ToastSpec {
         (None, Some(m)) => (m, String::new()),
         (None, None) => unreachable!("parse_envelope guarantees renderable text"),
     };
+    (
+        truncate(&summary, SUMMARY_MAX_CHARS),
+        truncate(&body, BODY_MAX_CHARS),
+    )
+}
+
+pub fn toast_spec(env: &Envelope, lang: Language) -> ToastSpec {
+    let (summary, body) = resolve_texts(env, lang);
     let (urgency, expire_ms) = urgency_expire(env.priority.as_deref());
     ToastSpec {
-        summary: truncate(&summary, SUMMARY_MAX_CHARS),
-        body: escape_markup(&truncate(&body, BODY_MAX_CHARS)),
+        summary,
+        body: escape_markup(&body),
         urgency,
         expire_ms,
         icon: icon_for(env.priority.as_deref()),
@@ -331,17 +412,89 @@ mod tests {
     }
 
     #[test]
-    fn k12_more_than_two_actions_are_truncated_and_flagged() {
-        let e = env(r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[
-                {"id":"a","label":{"nl":"A"}},
-                {"id":"b","label":{"nl":"B"}},
-                {"id":"c","label":{"nl":"C"}}
-            ]}"#);
+    fn more_than_max_actions_are_truncated_and_flagged() {
+        let buttons: Vec<String> = (0..7)
+            .map(|i| format!(r#"{{"id":"b{i}","label":{{"nl":"B{i}"}}}}"#))
+            .collect();
+        let e = env(&format!(
+            r#"{{"v":1,"id":"x","title":{{"nl":"a"}},"actions":[{}]}}"#,
+            buttons.join(",")
+        ));
         assert!(actions_are_truncated(&e));
         let t = toast_spec(&e, Language::Nl);
-        assert_eq!(t.actions.len(), 2);
-        assert_eq!(t.actions[0].0, "a");
-        assert_eq!(t.actions[1].0, "b");
+        assert_eq!(t.actions.len(), MAX_ACTIONS);
+        assert_eq!(t.actions[0].0, "b0");
+        assert_eq!(t.actions[4].0, "b4");
+    }
+
+    #[test]
+    fn the_live_plant_care_message_gets_its_three_buttons() {
+        let e = env(
+            r#"{"v":1,"id":"x","title":{"nl":"2 planten"},"data":{"action_buttons":[
+                {"action":"PLANTCARE_WATER_z","title":"Water gegeven"},
+                {"action":"PLANTCARE_SNOOZE_z","title":"Snooze 3 dagen"},
+                {"action":"PLANTCARE_SKIP_z","title":"Nog te nat"}]}}"#,
+        );
+        assert!(!actions_are_truncated(&e));
+        let t = toast_spec(&e, Language::En);
+        assert_eq!(
+            t.actions,
+            vec![
+                ("PLANTCARE_WATER_z".to_string(), "Water gegeven".to_string()),
+                (
+                    "PLANTCARE_SNOOZE_z".to_string(),
+                    "Snooze 3 dagen".to_string()
+                ),
+                ("PLANTCARE_SKIP_z".to_string(), "Nog te nat".to_string()),
+            ],
+            "single-language titles show whatever the language setting"
+        );
+    }
+
+    #[test]
+    fn lifetime_prefers_the_message_then_ephemeral_then_the_priority() {
+        let l = Lifetimes {
+            ephemeral: 10,
+            info: Some(60),
+            warning: None,
+            critical: None,
+        };
+        let plain = env(r#"{"v":1,"id":"x","priority":"info","title":{"nl":"a"}}"#);
+        assert_eq!(lifetime_minutes(&plain, &l), Some(60));
+        let warn = env(r#"{"v":1,"id":"x","priority":"warning","title":{"nl":"a"}}"#);
+        assert_eq!(
+            lifetime_minutes(&warn, &l),
+            None,
+            "no setting: desktop default"
+        );
+        let eph =
+            env(r#"{"v":1,"id":"x","priority":"critical","ephemeral":true,"title":{"nl":"a"}}"#);
+        assert_eq!(lifetime_minutes(&eph, &l), Some(10));
+        let own =
+            env(r#"{"v":1,"id":"x","ephemeral":true,"expires_in_minutes":3,"title":{"nl":"a"}}"#);
+        assert_eq!(lifetime_minutes(&own, &l), Some(3));
+        let not_eph = env(r#"{"v":1,"id":"x","ephemeral":false,"title":{"nl":"a"}}"#);
+        assert_eq!(lifetime_minutes(&not_eph, &Lifetimes::default()), None);
+        let huge = env(r#"{"v":1,"id":"x","expires_in_minutes":0,"title":{"nl":"a"}}"#);
+        assert_eq!(lifetime_minutes(&huge, &l), Some(1));
+    }
+
+    #[test]
+    fn links_resolve_paths_only_against_a_configured_base() {
+        let base = Some("http://10.10.10.2:8123/");
+        assert_eq!(
+            resolve_link("/control-panel/homelab", base).as_deref(),
+            Some("http://10.10.10.2:8123/control-panel/homelab")
+        );
+        assert_eq!(resolve_link("/control-panel/homelab", None), None);
+        assert_eq!(
+            resolve_link("http://10.10.10.6:8989/activity/queue", None).as_deref(),
+            Some("http://10.10.10.6:8989/activity/queue")
+        );
+        assert_eq!(resolve_link("", base), None);
+        assert_eq!(resolve_link("file:///etc/passwd", base), None);
+        assert_eq!(resolve_link("ms-settings:privacy", base), None);
+        assert_eq!(resolve_link("/x y", base), None);
     }
 
     #[test]

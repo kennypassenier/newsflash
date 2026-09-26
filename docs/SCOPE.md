@@ -120,6 +120,11 @@ Each of these must end up test-proven:
   (JSON: `v`, `id`, `ts`, `source`, `kind`, `audience`, `priority`,
   `title`/`message`/`tts` each carrying both `nl` and `en`, `ack_id`,
   `click_url`, `data`).
+- **Amendment 2026-09-24:** the live messages (read from the hub)
+  also carry `ephemeral`, `gate_outcome` and `data.action_buttons`, and
+  newsflash now uses `ephemeral`, `data.action_buttons` and `click_url`
+  (arch-2–arch-4). Proposals to make the chain cohesive are in
+  `docs/PROPOSALS.md`.
 - The **pipeline-v2 project owns the final envelope schema** (its
   Phase 4). A schema change there is a **mini-round trigger** here,
   never a silent adjustment.

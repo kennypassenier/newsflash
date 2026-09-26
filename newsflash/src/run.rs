@@ -1,22 +1,48 @@
 //! The one loop (AR13): poll → settle → repeat, with the AR9 error
 //! classes, the AR22 daemon hold, AR7 policy assertion on connect, and
 //! M4 graceful shutdown.
+//!
+//! Windows port: the loop is shared by both desktops. Everything
+//! platform-specific sits behind `Desktop` — Linux implements it in
+//! `render::LinuxDesktop` (notify-send), newsflash-win with WinRT
+//! toasts. The settle table, dedup, TTL, backoff and policy logic stay
+//! in one place so both OSes consume the one `desktop` subscription
+//! identically.
 
 use crate::config::Config;
 use crate::hub_client::{HubClient, PolicyOutcome};
-use crate::render::{daemon_present, show_toast_interactive, watch_interactive_toast};
+use crate::render::LinuxDesktop;
 use crate::{logx, state};
 use courier_core::action_result::{ACTIONS_TOPIC, build_action_result};
 use courier_core::backoff::retry_delay_secs;
-use courier_core::envelope::parse_from_hub;
-use courier_core::hub::{HubErrorClass, classify_receive_status, is_stale};
+use courier_core::envelope::{Envelope, parse_from_hub};
+use courier_core::hub::{HubErrorClass, HubMessage, classify_receive_status, is_stale};
 use courier_core::settle::{PreRender, SettleCallOutcome, pre_render};
-use courier_core::toast::{actions_are_truncated, interactive_wait_cap_ms, toast_spec};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-fn now_ms() -> u64 {
+/// Runs after the ack (AR24: settle never waits on the user) — the
+/// chime, the click watcher. May be a no-op.
+pub type AfterAck = Box<dyn FnOnce()>;
+
+/// What the loop needs from a desktop.
+pub trait Desktop {
+    /// AR22: can a toast be shown right now? `false` = hold, don't
+    /// consume — messages wait at the hub under the TTL.
+    fn ready(&mut self) -> bool;
+    /// State line logged (once) while `ready` is false.
+    fn hold_reason(&self) -> String;
+    /// State line logged (once) when `ready` turns true.
+    fn ready_line(&self) -> &'static str;
+    /// K2: show one parse-validated, fresh envelope. `Ok` = shown; the
+    /// loop marks it seen, acks, logs, then runs the returned hook.
+    /// `Err` = transient render failure: nack + re-probe (K3, AR22).
+    fn show(&mut self, message: &HubMessage, env: &Envelope) -> Result<AfterAck, String>;
+}
+
+pub fn now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
@@ -26,7 +52,7 @@ fn now_ms() -> u64 {
 /// M10: a fresh id for the action_result envelope newsflash publishes
 /// on a click — same shape as send_test's, this side just needs
 /// something unique, not globally meaningful.
-fn fresh_action_result_id() -> String {
+pub fn fresh_action_result_id() -> String {
     let millis = now_ms();
     format!("action-{millis}-{}", std::process::id())
 }
@@ -40,6 +66,7 @@ fn sleep_interruptible(secs: u64, term: &AtomicBool) {
     }
 }
 
+/// The Linux entry point: signals, the XDG state path, notify-send.
 pub fn run(config: Config) -> i32 {
     let term = Arc::new(AtomicBool::new(false));
     for sig in [signal_hook::consts::SIGTERM, signal_hook::consts::SIGINT] {
@@ -48,7 +75,18 @@ pub fn run(config: Config) -> i32 {
         let _ = signal_hook::flag::register_conditional_shutdown(sig, 130, Arc::clone(&term));
         let _ = signal_hook::flag::register(sig, Arc::clone(&term));
     }
+    let mut desktop = LinuxDesktop::new(&config);
+    run_with(&config, &mut desktop, &state::state_path(), &term)
+}
 
+/// The shared loop. `term` is the caller's shutdown flag (signals on
+/// Linux, a named event / Ctrl+C on Windows).
+pub fn run_with(
+    config: &Config,
+    desktop: &mut dyn Desktop,
+    seen_path: &Path,
+    term: &AtomicBool,
+) -> i32 {
     logx::info(&format!(
         "newsflash {} starting: hub={} topic={} subscription={} language={:?} ttl={}min sound={}",
         env!("CARGO_PKG_VERSION"),
@@ -64,8 +102,8 @@ pub fn run(config: Config) -> i32 {
             .unwrap_or_else(|| "off".into()),
     ));
 
-    let client = HubClient::new(&config);
-    let seen_path = state::state_path();
+    let client = HubClient::new(config);
+    let seen_path = seen_path.to_path_buf();
     let mut seen = state::load(&seen_path);
 
     let mut attempt: u32 = 0; // consecutive failed cycles (AR9)
@@ -80,17 +118,14 @@ pub fn run(config: Config) -> i32 {
         // AR22: hold while the notification daemon is absent — messages
         // wait at the hub under the TTL, which is the designed behaviour.
         if !daemon_ok {
-            daemon_ok = daemon_present();
+            daemon_ok = desktop.ready();
             if !daemon_ok {
-                log_state_change(
-                    &mut last_state,
-                    "no notification daemon on the session bus — holding, not consuming",
-                );
+                log_state_change(&mut last_state, &desktop.hold_reason());
                 attempt += 1;
-                sleep_interruptible(retry_delay_secs(attempt), &term);
+                sleep_interruptible(retry_delay_secs(attempt), term);
                 continue;
             }
-            log_state_change(&mut last_state, "notification daemon present");
+            log_state_change(&mut last_state, desktop.ready_line());
             attempt = 0;
         }
 
@@ -139,7 +174,7 @@ pub fn run(config: Config) -> i32 {
                 if let Some(notice) = notice {
                     logx::info(&format!("hub notice: {notice}"));
                 }
-                if handle_message(&config, &client, &mut seen, &seen_path, &message) {
+                if handle_message(config, &client, desktop, &mut seen, &seen_path, &message) {
                     // AR22: a render failure may mean the daemon left the
                     // bus (logout race, crash) — re-probe before consuming
                     // more; if it is present the probe passes at once.
@@ -196,7 +231,7 @@ pub fn run(config: Config) -> i32 {
                         ),
                     ),
                 }
-                sleep_interruptible(retry_delay_secs(attempt), &term);
+                sleep_interruptible(retry_delay_secs(attempt), term);
             }
         }
     }
@@ -210,9 +245,10 @@ pub fn run(config: Config) -> i32 {
 fn handle_message(
     config: &Config,
     client: &HubClient,
+    desktop: &mut dyn Desktop,
     seen: &mut courier_core::dedup::SeenSet,
-    seen_path: &std::path::PathBuf,
-    message: &courier_core::hub::HubMessage,
+    seen_path: &PathBuf,
+    message: &HubMessage,
 ) -> bool {
     let parsed = parse_from_hub(&message.payload);
     let stale = is_stale(message.published_at_ms, config.ttl_ms, now_ms());
@@ -229,23 +265,15 @@ fn handle_message(
                     message.id
                 ));
             }
-            if actions_are_truncated(env) {
-                logx::warn(&format!(
-                    "{}: more than 2 actions on the envelope — only the first 2 are shown (M10)",
-                    message.id
-                ));
-            }
-            let spec = toast_spec(env, config.language);
 
-            // M10 (AR13 amendment): interactive toasts block on the
+            // M10 (AR13 amendment): interactive toasts may wait on the
             // user's answer, so "delivered" (ack, within the hub's
             // lease) and "answered" (may take arbitrarily long, or
-            // never, for critical) are decoupled — the spawn/grace
-            // check settles the message here; the click, if any, is
-            // handled on a detached watcher below, exactly like the
-            // existing sound thread.
-            match show_toast_interactive(&spec) {
-                Ok(child) => {
+            // never, for critical) are decoupled — a successful show
+            // settles the message here; the click, if any, is handled
+            // by the desktop's own machinery after the ack.
+            match desktop.show(message, env) {
+                Ok(after_ack) => {
                     seen.insert(&message.id);
                     state::save(seen_path, seen);
                     settle_logged(client, &message.id, true, false);
@@ -253,44 +281,7 @@ fn handle_message(
                         "rendered {} (payload id {}, attempt {})",
                         message.id, env.id, message.attempt
                     ));
-                    if let Some(sound) = &config.sound_file {
-                        crate::render::play_sound(sound);
-                    }
-
-                    let max_wait =
-                        interactive_wait_cap_ms(spec.expire_ms, config.interactive_wait_margin_ms)
-                            .map(|ms| Duration::from_millis(ms as u64));
-                    let payload_id = env.id.clone();
-                    let ack_id = env.ack_id.clone();
-                    let hub_id = message.id.clone();
-                    let watcher_client = client.clone();
-                    watch_interactive_toast(child, max_wait, move |action| {
-                        let Some(action_id) = action else {
-                            logx::info(&format!(
-                                "{hub_id}: toast dismissed or timed out, no action chosen"
-                            ));
-                            return;
-                        };
-                        logx::info(&format!("{hub_id}: action {action_id:?} chosen"));
-                        let body = build_action_result(
-                            &fresh_action_result_id(),
-                            &payload_id,
-                            ack_id.as_deref(),
-                            &action_id,
-                        );
-                        match watcher_client.publish_to(ACTIONS_TOPIC, &body) {
-                            Ok(published_id) => logx::info(&format!(
-                                "{hub_id}: action_result {published_id} published to {ACTIONS_TOPIC}"
-                            )),
-                            Err(e) => logx::warn(&format!(
-                                "{hub_id}: failed to publish action_result ({}): {}",
-                                e.status
-                                    .map(|s| s.to_string())
-                                    .unwrap_or("transport".into()),
-                                e.detail
-                            )),
-                        }
-                    });
+                    after_ack();
                     false
                 }
                 Err(reason) => {
@@ -329,6 +320,38 @@ fn handle_message(
             settle_logged(client, &message.id, false, true);
             false
         }
+    }
+}
+
+/// M10 reply path, shared by both desktops: publish one action_result
+/// to `notify.actions`. Failures are logged, never retried — the click
+/// is a user gesture, not a queued obligation.
+pub fn publish_action_result(
+    client: &HubClient,
+    hub_id: &str,
+    payload_id: &str,
+    ack_id: Option<&str>,
+    action_id: &str,
+    inputs: &[(String, String)],
+) {
+    let body = build_action_result(
+        &fresh_action_result_id(),
+        payload_id,
+        ack_id,
+        action_id,
+        inputs,
+    );
+    match client.publish_to(ACTIONS_TOPIC, &body) {
+        Ok(published_id) => logx::info(&format!(
+            "{hub_id}: action_result {published_id} published to {ACTIONS_TOPIC}"
+        )),
+        Err(e) => logx::warn(&format!(
+            "{hub_id}: failed to publish action_result ({}): {}",
+            e.status
+                .map(|s| s.to_string())
+                .unwrap_or("transport".into()),
+            e.detail
+        )),
     }
 }
 

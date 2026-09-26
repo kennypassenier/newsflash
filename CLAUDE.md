@@ -19,8 +19,8 @@ gates hold from any session or terminal. After a fresh clone, run:
 |---|---|
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
-| Next gate | none open — see "Open work" below for what starts as its own mini-round |
-| Next action | waiting on Kenny: nothing in progress here |
+| Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
+| Next action | executing the 2026-09-26 form answers: claude-peek cleanup, deferred meaning from pipeline-v2, filing the asks, popup durations, chime candidates |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -41,8 +41,46 @@ load; AR11 gained a per-priority `--icon` (the real visual
 differentiator — an urgency-based attempt was tried, tested, and
 reverted the same session, see AR28's sibling amendment).
 
+**Windows port — BUILT 2026-09-24, RATIFIED 2026-09-26 and merged to
+`main` (PR #2).** Kenny asked for a Windows 11 equivalent (dual boot
+with Garuda, one `desktop` subscription). New crate `newsflash-win`;
+`run.rs` now drives a `Desktop` trait (Linux behaviour unchanged, all
+tests green); toast XML is pure core (`courier-core/src/wintoast.rs`).
+Live-drilled on Kenny's Windows 11 25H2 against a scratch mock hub:
+render, ack, policy, real mouse clicks by Kenny (Gelezen; Verstuur with
+typed text + dropdown) → `action_result` with inputs, live
+in-place progress updates, graceful stop/reinstall. Finding: per-user
+COM `LocalServer32` is ignored on that build, so clicks need the daemon
+running (it autostarts at logon). Everything — decisions arch-win-1–arch-win-7,
+features feat-win-1–feat-win-11 and the envelope extensions proposed to pipeline-v2 —
+is in `docs/WINDOWS.md`.
+
+**Later the same day:**
+- **feat-2:** Linux `install`/`uninstall`.
+- **feat-3:** the setup wizard, both OSes.
+- **Live message fields** read from the hub and built on both OSes:
+  `data.action_buttons` (cap now 5), `ephemeral` + lifetimes, and
+  `click_url` + `link_base_url` (arch-1–arch-5 in
+  `docs/ARCHITECTURE_DECISIONS.md`, feat-1–feat-6 in `docs/FEATURES.md`).
+- **Cohesion proposals** to pipeline-v2/HA/kyu: `docs/PROPOSALS.md`.
+
 ## Open work (each its own mini-round, not started)
 
+- **Flake, unnamed (rule 8a):** `live_link_button_opens_the_page_and_publishes_no_action_result`
+  (`newsflash/tests/loop_tests.rs`) failed once on 2026-09-26 in `cargo test --all`
+  with "courier did not exit in time" (10 s after SIGTERM) at load
+  average 54 on the WSL box; 6 plain reruns and 4 reruns under 48
+  busy-loop CPU hogs all passed in ~2.5 s. CPU load alone does not
+  reproduce it; the cause is not named yet.
+
+- **Clean up the temporary kyu subscription `claude-peek`** on
+  `notify.kenny` (created 2026-09-24 to read the live messages; it
+  still holds the unread tail).
+- **ask-4/ask-5 need Kenny's call:** does `push` imply the desktop, and what
+  does `gate_outcome: deferred` mean for it (quiet delivery?).
+
+- **Ratify + merge the Windows port**, and file the feat-win-3–feat-win-9 envelope
+  extensions with pipeline-v2 (they subsume D3's snooze picker).
 - **Envelope v2 mini-round** when pipeline-v2 freezes its final
   schema (the pinned v1 vector test is the tripwire).
 - Chime file for K6 (sound is off until Kenny picks one).

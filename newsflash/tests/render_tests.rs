@@ -16,7 +16,7 @@ use courier_core::envelope::parse_envelope;
 use courier_core::toast::{Language, toast_spec};
 use newsflash::render::{
     RunOutcome, daemon_present, play_sound, run_with_timeout, show_toast_interactive,
-    watch_interactive_toast,
+    show_toast_with, watch_interactive_toast, watch_toast,
 };
 use std::path::PathBuf;
 use std::process::Command;
@@ -247,6 +247,55 @@ fn l3_render_shell_via_path_shims() {
          capped watcher of the same shim family to already have fired"
     );
     assert_eq!(rx.recv_timeout(Duration::from_secs(2)).unwrap(), None);
+
+    // Phase E: a lifetime (ephemeral / expire_*_minutes). notify-send is
+    // asked for the id (--print-id), the timer closes that notification
+    // over D-Bus when the lifetime ends, and the id line is never
+    // mistaken for a click — the real click after it still comes through.
+    let bus_log = dir.join("busctl.log");
+    install_shim(
+        "busctl",
+        &format!("#!/bin/sh\necho \"$*\" >> {}\nexit 0\n", bus_log.display()),
+    );
+    let click_file = dir.join("click-e");
+    std::fs::write(&click_file, "PLANTCARE_WATER_z").unwrap();
+    install_shim(
+        "notify-send",
+        &format!(
+            "#!/bin/sh\necho \"$0 $*\" >> {log}\necho 4242\nsleep 0.6\ncat {click}\nexit 0\n",
+            log = log.display(),
+            click = click_file.display(),
+        ),
+    );
+    let child = show_toast_with(&plain_spec, true).expect("spawn ok");
+    let (tx, rx) = mpsc::channel();
+    watch_toast(
+        child,
+        Some(Duration::from_secs(5)),
+        Some(Duration::from_millis(200)),
+        move |action| {
+            tx.send(action).unwrap();
+        },
+    );
+    assert_eq!(
+        rx.recv_timeout(Duration::from_secs(3)).unwrap(),
+        Some("PLANTCARE_WATER_z".to_string()),
+        "the id line must not be read as the click"
+    );
+    assert!(
+        std::fs::read_to_string(&log)
+            .unwrap()
+            .lines()
+            .last()
+            .unwrap()
+            .contains("--print-id"),
+        "a toast with a lifetime asks notify-send for its id"
+    );
+    let closed = std::fs::read_to_string(&bus_log).unwrap_or_default();
+    assert!(
+        closed.contains("org.freedesktop.Notifications CloseNotification u 4242"),
+        "the lifetime timer must close notification 4242: {closed:?}"
+    );
 
     unsafe { std::env::set_var("PATH", old_path) };
 }

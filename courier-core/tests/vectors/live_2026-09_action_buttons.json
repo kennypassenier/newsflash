@@ -1,0 +1,55 @@
+{
+  "ack_id": "plant_water",
+  "audience": "kenny",
+  "click_url": "/control-panel/plants",
+  "data": {
+    "action_buttons": [
+      {
+        "action": "PLANTCARE_WATER_zamioculcas_raven+zamioculcas_zamiifolia",
+        "title": "Water gegeven"
+      },
+      {
+        "action": "PLANTCARE_SNOOZE_zamioculcas_raven+zamioculcas_zamiifolia",
+        "title": "Snooze 3 dagen"
+      },
+      {
+        "action": "PLANTCARE_SKIP_zamioculcas_raven+zamioculcas_zamiifolia",
+        "title": "Nog te nat"
+      }
+    ],
+    "allow_duplicates": false,
+    "color": "Blue",
+    "flip_active_at_publish": false,
+    "light_areas": [],
+    "light_entities": [],
+    "notification_types": [
+      "push"
+    ],
+    "parents_speaker": "media_player.living_room_speaker",
+    "push_targets": [
+      "kenny"
+    ],
+    "speak_to_parents": false,
+    "tts_target": "media_player.kenny_pc"
+  },
+  "ephemeral": false,
+  "gate_outcome": "deferred",
+  "id": "20260901T154923219340-7980",
+  "kind": "notification",
+  "message": {
+    "en": "Zamioculcas Raven was last watered 0 days ago.\nZamioculcas Zamiifolia was last watered 0 days ago.\n\nFeel the soil first. If it is dry, water it and press Watered. If it still feels damp, press Still wet and I will ask again in 3 days.",
+    "nl": "Zamioculcas Raven kreeg 0 dagen geleden voor het laatst water.\nZamioculcas Zamiifolia kreeg 0 dagen geleden voor het laatst water.\n\nVoel eerst of de aarde droog is. Is ze dat, geef water en druk op Water gegeven. Voelt ze nog vochtig, druk dan op Nog te nat - dan vraag ik het over 3 dagen opnieuw."
+  },
+  "priority": "warning",
+  "source": "ha",
+  "title": {
+    "en": "2 plants needs water",
+    "nl": "2 planten heeft water nodig"
+  },
+  "ts": "2026-09-01T15:49:23.219454+02:00",
+  "tts": {
+    "en": "There are 2 plants waiting for water.",
+    "nl": "Er staan 2 planten te wachten op water."
+  },
+  "v": 1
+}

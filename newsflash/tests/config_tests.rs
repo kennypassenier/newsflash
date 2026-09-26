@@ -36,6 +36,34 @@ fn m2_ar10_config_validation_names_field_and_remedy() {
     let p = write_config("https.toml", "hub_url = \"https://10.0.0.1:8080\"");
     assert!(config::load(&p).unwrap_err().contains("http://"));
 
+    // Lifetimes and link base: validated, with remedies; defaults kept.
+    unsafe { std::env::set_var("KYU_TOKEN", "t") };
+    let p = write_config(
+        "life-ok.toml",
+        "hub_url = \"http://h:1\"\nexpire_info_minutes = 60\nlink_base_url = \"http://10.10.10.2:8123/\"",
+    );
+    let c = config::load(&p).unwrap();
+    assert_eq!(c.lifetimes.ephemeral, 10, "ephemeral default");
+    assert_eq!(c.lifetimes.info, Some(60));
+    assert_eq!(c.lifetimes.warning, None);
+    assert_eq!(c.link_base_url.as_deref(), Some("http://10.10.10.2:8123"));
+    let p = write_config(
+        "life-bad.toml",
+        "hub_url = \"http://h:1\"\nephemeral_minutes = 0",
+    );
+    let err = config::load(&p).unwrap_err();
+    assert!(
+        err.contains("ephemeral_minutes") && err.contains("4320"),
+        "{err}"
+    );
+    let p = write_config(
+        "link-bad.toml",
+        "hub_url = \"http://h:1\"\nlink_base_url = \"homeassistant\"",
+    );
+    let err = config::load(&p).unwrap_err();
+    assert!(err.contains("link_base_url"), "{err}");
+    unsafe { std::env::remove_var("KYU_TOKEN") };
+
     // Inline token refused (AR10).
     let p = write_config("inline.toml", "hub_url = \"http://h:1\"\ntoken = \"oops\"");
     let err = config::load(&p).unwrap_err();

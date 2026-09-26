@@ -2,9 +2,12 @@
 //! drive the same modules the binary composes (AR18).
 
 pub mod config;
+pub mod config_edit;
 pub mod hub_client;
+pub mod install;
 pub mod logx;
 pub mod render;
 pub mod run;
 pub mod send_test;
+pub mod setup;
 pub mod state;
