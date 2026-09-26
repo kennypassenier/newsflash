@@ -63,6 +63,7 @@ fn config_for(hub_url: &str) -> Config {
         token: "mock-token-XYZ".into(),
         interactive_wait_margin_ms: 30_000,
         lifetimes: Default::default(),
+        popup: Default::default(),
         link_base_url: None,
     }
 }

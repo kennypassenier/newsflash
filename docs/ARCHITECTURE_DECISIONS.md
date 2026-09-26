@@ -532,3 +532,15 @@ and uninstall removes exactly those. On Windows: the user PATH, the Run
 key, the COM activator, a Start menu `.lnk`, and an Installed apps
 entry (HKCU only, no admin). The config is edited line by line, so
 comments survive (`config_edit`).
+
+### arch-6 · Popup durations are configuration, critical stays pinned (2026-09-26)
+Kenny asked on 2026-08-30 for the per-priority popup durations to be
+tunable, and chose on 2026-09-26 to open only `info` and `warning`
+(feat-7). The AR11 table's 10 s / 30 s become the defaults of
+`popup_info_seconds` / `popup_warning_seconds`; `critical`'s
+`expire_ms: 0` stays a pinned constant, because "stays until answered"
+is the contract `critical` exists for (standing rule 27: operational
+knobs are configuration, contract values stay pinned). Windows has only
+`short` (~7 s) and `long` (~25 s); a configured duration picks the
+nearer one, with the boundary at 16 s, so the defaults keep their old
+mapping. Code-enforced (`urgency_expire`, `windows_duration`).

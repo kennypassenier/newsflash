@@ -177,6 +177,17 @@ the screen and from the notification history. With
 **Proven by:** `lifetime_prefers_the_message_then_ephemeral_then_the_priority`,
 render test phase E (closes the notification by its id).
 
+## feat-7 · How long a popup stays on screen
+
+`popup_info_seconds` (default 10) and `popup_warning_seconds` (default
+30) set how long an info or warning popup stays before it moves to the
+notification history. A critical popup always stays until you answer
+it. Windows only has a short (about 7 s) and a long (about 25 s) popup:
+16 seconds or more means long there.
+
+**Proven by:** `feat_7_configured_popup_durations_apply_to_info_and_warning_only`,
+`feat_7_configured_popup_durations_pick_short_or_long`.
+
 ## feat-6 · Links
 
 Clicking the notification itself opens its `click_url`. Links that are

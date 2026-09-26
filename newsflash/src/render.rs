@@ -22,8 +22,8 @@ use crate::run::{AfterAck, Desktop, publish_action_result};
 use courier_core::envelope::Envelope;
 use courier_core::hub::HubMessage;
 use courier_core::toast::{
-    Language, Lifetimes, ToastSpec, actions_are_truncated, interactive_wait_cap_ms,
-    lifetime_minutes, resolve_link, toast_spec,
+    Language, Lifetimes, PopupDurations, ToastSpec, actions_are_truncated, interactive_wait_cap_ms,
+    lifetime_minutes, resolve_link, toast_spec_with,
 };
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
@@ -38,6 +38,7 @@ pub struct LinuxDesktop {
     sound_file: Option<PathBuf>,
     interactive_wait_margin_ms: u32,
     lifetimes: Lifetimes,
+    popup: PopupDurations,
     link_base_url: Option<String>,
 }
 
@@ -53,6 +54,7 @@ impl LinuxDesktop {
             sound_file: config.sound_file.clone(),
             interactive_wait_margin_ms: config.interactive_wait_margin_ms,
             lifetimes: config.lifetimes,
+            popup: config.popup,
             link_base_url: config.link_base_url.clone(),
         }
     }
@@ -80,7 +82,7 @@ impl Desktop for LinuxDesktop {
                 courier_core::toast::MAX_ACTIONS
             ));
         }
-        let mut spec = toast_spec(env, self.language);
+        let mut spec = toast_spec_with(env, self.language, &self.popup);
         // Clicking the notification itself opens click_url, when there is
         // one we may open (full http(s), or a path + link_base_url).
         let link = env

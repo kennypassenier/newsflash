@@ -10,7 +10,7 @@
 use crate::{AUMID, images, registry};
 use courier_core::envelope::Envelope;
 use courier_core::hub::HubMessage;
-use courier_core::toast::{Language, Lifetimes};
+use courier_core::toast::{Language, Lifetimes, PopupDurations};
 use courier_core::wintoast::{BuildInput, CriticalScenario, WinToast, build_toast, logo_asset};
 use newsflash::config::Config;
 use newsflash::logx;
@@ -48,6 +48,7 @@ pub struct WinDesktop {
     hold: String,
     live: VecDeque<ToastNotification>,
     lifetimes: Lifetimes,
+    popup: PopupDurations,
     link_base_url: Option<String>,
 }
 
@@ -68,6 +69,7 @@ impl WinDesktop {
             hold: String::new(),
             live: VecDeque::new(),
             lifetimes: config.lifetimes,
+            popup: config.popup,
             link_base_url: config.link_base_url.clone(),
         }
     }
@@ -151,6 +153,7 @@ impl Desktop for WinDesktop {
                 silent: self.chime.is_some(),
                 demo: false,
                 lifetimes: self.lifetimes,
+                popup: self.popup,
                 link_base: self.link_base_url.as_deref(),
             },
         );

@@ -67,3 +67,9 @@ default-off as F6). Changes from here go through mini-rounds only.
 | feat-4 | Live button format `data.action_buttons`; cap 5 on both desktops (AR27 revision, arch-2) | Essential | core tests incl. the pinned live plant-care vector |
 | feat-5 | Lifetimes: `ephemeral` → `ephemeral_minutes`, `expire_<priority>_minutes`, proposed `expires_in_minutes` (arch-3) | Essential | core lifetime tests; Linux close-by-id render test; Windows `ExpirationTime` via the builder tests |
 | feat-6 | `click_url` opens on a body click; path links via `link_base_url` (arch-4) | Desired | `resolve_link` tests; builder tests |
+
+## Round 4 — 2026-09-26 (Kenny's form answer `popup-durations: A`)
+
+| ID | Feature | Rating | Test expectation |
+|---|---|---|---|
+| feat-7 | Popup durations for `info` and `warning` are configurable (`popup_info_seconds`, default 10; `popup_warning_seconds`, default 30; 1–3600). `critical` stays on screen until answered and has no key. Windows maps 16 s or more to `long`, less to `short` (arch-6) | Desired | `feat_7_configured_popup_durations_apply_to_info_and_warning_only` (core), `feat_7_configured_popup_durations_pick_short_or_long` (wintoast), config validation in `config_tests.rs` |
