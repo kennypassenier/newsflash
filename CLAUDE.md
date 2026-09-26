@@ -20,7 +20,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
-| Next action | nothing in progress here; open: Garuda-side chime + install of the new build (on the workstation list), the unnamed flake |
+| Next action | waiting on Kenny: the windows-update form (install 0.2.0 on this Windows pc); otherwise only the unnamed flake is open |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -72,12 +72,12 @@ is in `docs/WINDOWS.md`.
   average 54 on the WSL box; 6 plain reruns and 4 reruns under 48
   busy-loop CPU hogs all passed in ~2.5 s. CPU load alone does not
   reproduce it; the cause is not named yet.
-- **On Garuda (next boot):** copy `assets/chimes/newsflash-soft-pulse.wav`
-  to `~/.local/share/newsflash/chimes/`, set `sound_file` in
-  `~/.config/newsflash/config.toml`, and install the build with feat-7/8.
-  Windows got the chime on 2026-09-26 (config set, daemon restarted,
-  log line `sound=…newsflash-soft-pulse.wav`); its installed binaries
-  are still the 2026-09-24 build, without feat-7/8.
+- **Garuda picks everything up through `resume`:** ws-tools rebuilds
+  newsflash because the version moved to 0.2.0; `newsflash install`
+  then copies it to `~/.local/bin`, writes the chime, sets
+  `sound_file` and restarts the unit (feat-9). Whether ws-tools runs
+  that install step itself is the workstation project's call (asked
+  2026-09-27); until then it is row 5 of workstation `GARUDA.md`.
 - **The seven asks are filed** in the vault as `Notification Pipeline V2
   Desktop Cohesion Proposals.md` (2026-09-26); pipeline-v2 decides them
   (ask-4 already decided by Kenny: push implies desktop).

@@ -199,6 +199,18 @@ pop up.
 
 **Proven by:** `feat_8_dropped_is_acked_unshown_and_deferred_renders_low`.
 
+## feat-9 · The chime comes with the install
+
+`newsflash install` puts the soft-pulse chime in newsflash's data folder
+(`~/.local/share/newsflash/chimes/` on Linux,
+`%LOCALAPPDATA%\newsflash\chimes\` on Windows) and sets `sound_file`
+to it, unless your config already names a sound file. Remove the line,
+or point it elsewhere, to change it; set it to a file of your own and
+the installer leaves it alone.
+
+**Proven by:** `feat_9_an_unset_sound_file_gets_the_shipped_chime`,
+`feat_9_a_sound_file_already_chosen_is_left_alone`.
+
 ## feat-6 · Links
 
 Clicking the notification itself opens its `click_url`. Links that are
