@@ -72,12 +72,11 @@ is in `docs/WINDOWS.md`.
   average 54 on the WSL box; 6 plain reruns and 4 reruns under 48
   busy-loop CPU hogs all passed in ~2.5 s. CPU load alone does not
   reproduce it; the cause is not named yet.
-- **Garuda picks everything up through `resume`:** ws-tools rebuilds
-  newsflash because the version moved to 0.2.0; `newsflash install`
-  then copies it to `~/.local/bin`, writes the chime, sets
-  `sound_file` and restarts the unit (feat-9). Whether ws-tools runs
-  that install step itself is the workstation project's call (asked
-  2026-09-27); until then it is row 5 of workstation `GARUDA.md`.
+- **Garuda picks everything up through `resume`:** workstation ws-tools
+  (450e016) rebuilds newsflash when the version moves (0.2.0 since PR #5)
+  and then runs `newsflash install`, which copies it to `~/.local/bin`,
+  writes the chime, sets `sound_file` and restarts the unit (feat-9).
+  Nothing manual is left on Garuda.
 - **The seven asks are filed** in the vault as `Notification Pipeline V2
   Desktop Cohesion Proposals.md` (2026-09-26); pipeline-v2 decides them
   (ask-4 already decided by Kenny: push implies desktop).
