@@ -20,7 +20,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
-| Next action | executing the 2026-09-26 form answers: claude-peek cleanup, deferred meaning from pipeline-v2, filing the asks, popup durations, chime candidates |
+| Next action | waiting on Kenny: the two-item form of 2026-09-26 (chime pick from `assets/chimes/`, and whether to build quiet delivery for `deferred`/`dropped`) |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -72,26 +72,23 @@ is in `docs/WINDOWS.md`.
   average 54 on the WSL box; 6 plain reruns and 4 reruns under 48
   busy-loop CPU hogs all passed in ~2.5 s. CPU load alone does not
   reproduce it; the cause is not named yet.
+- **Quiet delivery for `gate_outcome: deferred` / `dropped`** (ask-5,
+  measured 2026-09-26 in `script.notification_dispatch`, see
+  `docs/PROPOSALS.md`): newsflash-internal, waits on Kenny's form answer.
+- **Chime:** three candidates in `assets/chimes/` (WAV, work on both
+  OSes); waits on Kenny's pick.
+- **The seven asks are filed** in the vault as `Notification Pipeline V2
+  Desktop Cohesion Proposals.md` (2026-09-26); pipeline-v2 decides them
+  (ask-4 already decided by Kenny: push implies desktop).
 
-- **Clean up the temporary kyu subscription `claude-peek`** on
-  `notify.kenny` (created 2026-09-24 to read the live messages; it
-  still holds the unread tail).
-- **ask-4/ask-5 need Kenny's call:** does `push` imply the desktop, and what
-  does `gate_outcome: deferred` mean for it (quiet delivery?).
+Done 2026-09-26: Windows port ratified and merged (PR #2); popup
+durations configurable (feat-7, PR #3); `claude-peek` found already
+archived (explicit idle policy 60 s / 120 s, 11,526 deliveries
+`lapsed`, nothing held) and kyu 3.x has no delete-subscription call, so
+nothing was changed on CT 109.
 
-- **Ratify + merge the Windows port**, and file the feat-win-3–feat-win-9 envelope
-  extensions with pipeline-v2 (they subsume D3's snooze picker).
 - **Envelope v2 mini-round** when pipeline-v2 freezes its final
   schema (the pinned v1 vector test is the tripwire).
-- Chime file for K6 (sound is off until Kenny picks one).
-- **Configurable per-priority durations** (Kenny, 2026-08-30): the
-  `info`/`warning`/`critical` → duration mapping (currently hardcoded
-  in `courier-core/src/toast.rs::urgency_expire` — 10s/30s/persistent,
-  AR11) should become tunable. Note: "critical stays until explicitly
-  dismissed" is **already true today** (`expire_ms: 0`, standing since
-  0.1.0) — the open part is making the durations for `info`/`warning`
-  (and possibly `critical`'s persistence itself) configurable rather
-  than fixed constants.
 - **Two requirements filed with pipeline-v2** (2026-08-30, from the
   stress-test session): D1, a message-level override for its own
   display duration (`docs/DRILL_LOG.md` 2026-08-30 entry); D3, a
