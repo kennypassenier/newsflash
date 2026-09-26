@@ -81,23 +81,33 @@ Every message on `notify.kenny` becomes a desktop notification.
 `data.notification_types` never says "desktop": the 35 ephemeral
 "Beweging" reminders are `["tts","glow"]`, meaning spoken on
 `media_player.kenny_pc` plus the office lights. Today they are also a
-desktop notification. That may or may not be wanted.
+desktop notification.
 
 **Proposal (pipeline-v2):** add `desktop` to the notification-type
 vocabulary, and publish to `notify.kenny` only when it's included. The
 routing decision stays upstream (S9), and the desktop keeps rendering
-whatever reaches it. **Needs Kenny's call:** should `push` imply the
-desktop, or be separate?
+whatever reaches it. **Kenny's call (2026-09-26): `push` implies
+`desktop`.** A message with `push` keeps reaching the desktop; one that
+is only spoken or only lights (63 of the 16,774 read) does not.
 
 ## ask-5 · Deferred messages arrive quietly
 
-62% of messages carry `gate_outcome: "deferred"`: something held them
-back and released them later.
+62% of messages carry `gate_outcome: "deferred"`.
 
-**Proposal:** agree on what "deferred" means for the desktop.
-Suggested: show it without a popup and without sound, straight into
-Notification Center / Plasma history, because the moment it was
-relevant has passed. Not built until the meaning is confirmed.
+**Measured 2026-09-26** in `script.notification_dispatch` (Home
+Assistant): `gate_outcome` is set at the moment of publishing, from the
+dispatcher's own gate. A non-critical message is `live` when Do Not
+Disturb is off, `schedule.notification_active_hours` is on and
+`input_boolean.media_session_active` is off; otherwise it is `deferred`
+(parked on `todo.notifications` for the hourly bulletin) or, when it is
+`ephemeral`, `dropped`. Critical is always `live`. The hub copy is
+published at that same moment, not later: "deferred" means "Kenny asked
+not to be disturbed right now", not "released late".
+
+**So this is no longer an ask:** the field already says what the desktop
+needs. Showing a `deferred` message without popup and sound (straight
+into Notification Center / Plasma history), and a `dropped` one not at
+all, is newsflash's own change, decided in its own mini-round.
 
 ## ask-6 · Don't send the desktop's missed-message notices to the desktop
 
