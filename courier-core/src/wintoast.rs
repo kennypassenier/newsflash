@@ -14,8 +14,8 @@
 
 use crate::envelope::{ActionDef, Envelope, InputDef, Progress};
 use crate::toast::{
-    DEFAULT_ACTIONS, Language, Lifetimes, MAX_ACTIONS, PopupDurations, lifetime_minutes, pick,
-    resolve_link, resolve_texts,
+    DEFAULT_ACTIONS, Language, Lifetimes, MAX_ACTIONS, PopupDurations, Presentation,
+    lifetime_minutes, pick, presentation, resolve_link, resolve_texts,
 };
 
 /// Platform limits (toast schema): buttons + context-menu items, inputs,
@@ -100,6 +100,9 @@ pub struct WinToast {
     /// feat-win-12: when Windows should drop the toast from Notification Center
     /// (Unix ms). `None` = Windows' own default (3 days).
     pub expires_at_ms: Option<u64>,
+    /// feat-8: a deferred message goes straight to Notification Center
+    /// (`ToastNotification.SuppressPopup`), silently.
+    pub suppress_popup: bool,
 }
 
 /// Windows offers two popup durations only: `short` (about 7 s) and
@@ -261,7 +264,7 @@ pub fn build_toast(env: &Envelope, input: &BuildInput) -> WinToast {
     }
     xml.push_str("</actions>");
 
-    if input.silent {
+    if input.silent || presentation(env) == Presentation::Quiet {
         xml.push_str(r#"<audio silent="true"/>"#);
     }
     xml.push_str("</toast>");
@@ -273,6 +276,7 @@ pub fn build_toast(env: &Envelope, input: &BuildInput) -> WinToast {
         dropped_actions,
         dropped_inputs,
         expires_at_ms: expires_at_ms(env, input),
+        suppress_popup: presentation(env) == Presentation::Quiet,
     }
 }
 
@@ -628,6 +632,16 @@ mod tests {
 
     fn build(json: &str) -> WinToast {
         build_toast(&env(json), &input())
+    }
+
+    #[test]
+    fn feat_8_a_deferred_toast_is_silent_and_suppresses_its_popup() {
+        let quiet = build(r#"{"v":1,"id":"x","gate_outcome":"deferred","title":{"nl":"a"}}"#);
+        assert!(quiet.suppress_popup);
+        assert!(quiet.xml.contains(r#"<audio silent="true"/>"#));
+        let live = build(r#"{"v":1,"id":"x","gate_outcome":"live","title":{"nl":"a"}}"#);
+        assert!(!live.suppress_popup);
+        assert!(!live.xml.contains("silent"));
     }
 
     #[test]

@@ -20,7 +20,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
-| Next action | waiting on Kenny: the two-item form of 2026-09-26 (chime pick from `assets/chimes/`, and whether to build quiet delivery for `deferred`/`dropped`) |
+| Next action | nothing in progress here; open: Garuda-side chime + install of the new build (on the workstation list), the unnamed flake |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -72,11 +72,12 @@ is in `docs/WINDOWS.md`.
   average 54 on the WSL box; 6 plain reruns and 4 reruns under 48
   busy-loop CPU hogs all passed in ~2.5 s. CPU load alone does not
   reproduce it; the cause is not named yet.
-- **Quiet delivery for `gate_outcome: deferred` / `dropped`** (ask-5,
-  measured 2026-09-26 in `script.notification_dispatch`, see
-  `docs/PROPOSALS.md`): newsflash-internal, waits on Kenny's form answer.
-- **Chime:** three candidates in `assets/chimes/` (WAV, work on both
-  OSes); waits on Kenny's pick.
+- **On Garuda (next boot):** copy `assets/chimes/newsflash-soft-pulse.wav`
+  to `~/.local/share/newsflash/chimes/`, set `sound_file` in
+  `~/.config/newsflash/config.toml`, and install the build with feat-7/8.
+  Windows got the chime on 2026-09-26 (config set, daemon restarted,
+  log line `sound=…newsflash-soft-pulse.wav`); its installed binaries
+  are still the 2026-09-24 build, without feat-7/8.
 - **The seven asks are filed** in the vault as `Notification Pipeline V2
   Desktop Cohesion Proposals.md` (2026-09-26); pipeline-v2 decides them
   (ask-4 already decided by Kenny: push implies desktop).
@@ -85,7 +86,8 @@ Done 2026-09-26: Windows port ratified and merged (PR #2); popup
 durations configurable (feat-7, PR #3); `claude-peek` found already
 archived (explicit idle policy 60 s / 120 s, 11,526 deliveries
 `lapsed`, nothing held) and kyu 3.x has no delete-subscription call, so
-nothing was changed on CT 109.
+nothing was changed on CT 109. Quiet delivery for deferred/dropped
+(feat-8) and the soft-pulse chime chosen the same evening.
 
 - **Envelope v2 mini-round** when pipeline-v2 freezes its final
   schema (the pinned v1 vector test is the tripwire).

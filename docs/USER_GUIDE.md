@@ -188,6 +188,17 @@ it. Windows only has a short (about 7 s) and a long (about 25 s) popup:
 **Proven by:** `feat_7_configured_popup_durations_apply_to_info_and_warning_only`,
 `feat_7_configured_popup_durations_pick_short_or_long`.
 
+## feat-8 · Quiet when Home Assistant says quiet
+
+When Home Assistant holds a notification back (Do Not Disturb, outside
+the active hours, or while a film plays), it still reaches the desktop,
+but without a popup and without the chime: you find it in the
+notification history. A short-lived one that Home Assistant throws away
+in that situation does not appear at all. Critical notifications always
+pop up.
+
+**Proven by:** `feat_8_dropped_is_acked_unshown_and_deferred_renders_low`.
+
 ## feat-6 · Links
 
 Clicking the notification itself opens its `click_url`. Links that are

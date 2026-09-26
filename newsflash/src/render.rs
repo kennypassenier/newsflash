@@ -22,8 +22,8 @@ use crate::run::{AfterAck, Desktop, publish_action_result};
 use courier_core::envelope::Envelope;
 use courier_core::hub::HubMessage;
 use courier_core::toast::{
-    Language, Lifetimes, PopupDurations, ToastSpec, actions_are_truncated, interactive_wait_cap_ms,
-    lifetime_minutes, resolve_link, toast_spec_with,
+    Language, Lifetimes, PopupDurations, Presentation, ToastSpec, actions_are_truncated,
+    interactive_wait_cap_ms, lifetime_minutes, presentation, resolve_link, toast_spec_with,
 };
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
@@ -74,6 +74,14 @@ impl Desktop for LinuxDesktop {
     }
 
     fn show(&mut self, message: &HubMessage, env: &Envelope) -> Result<AfterAck, String> {
+        let presentation = presentation(env);
+        if presentation == Presentation::Skip {
+            logx::info(&format!(
+                "{}: dropped by Home Assistant's gate (gate_outcome \"dropped\") — acked, not shown",
+                message.id
+            ));
+            return Ok(Box::new(|| {}));
+        }
         if actions_are_truncated(env) {
             logx::warn(&format!(
                 "{}: more than {} actions on the envelope — only the first {} are shown (M10)",
@@ -112,7 +120,13 @@ impl Desktop for LinuxDesktop {
         });
         let child = show_toast_with(&spec, close_after.is_some())?;
 
-        let sound = self.sound_file.clone();
+        // feat-8: a deferred message arrives without popup (low urgency)
+        // and without the chime.
+        let sound = if presentation == Presentation::Quiet {
+            None
+        } else {
+            self.sound_file.clone()
+        };
         let max_wait = interactive_wait_cap_ms(spec.expire_ms, self.interactive_wait_margin_ms)
             .map(|ms| Duration::from_millis(ms as u64));
         let payload_id = env.id.clone();
