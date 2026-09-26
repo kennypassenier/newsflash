@@ -14,8 +14,8 @@
 
 use crate::envelope::{ActionDef, Envelope, InputDef, Progress};
 use crate::toast::{
-    DEFAULT_ACTIONS, Language, Lifetimes, MAX_ACTIONS, lifetime_minutes, pick, resolve_link,
-    resolve_texts,
+    DEFAULT_ACTIONS, Language, Lifetimes, MAX_ACTIONS, PopupDurations, lifetime_minutes, pick,
+    resolve_link, resolve_texts,
 };
 
 /// Platform limits (toast schema): buttons + context-menu items, inputs,
@@ -75,6 +75,8 @@ pub struct BuildInput<'a> {
     pub demo: bool,
     /// How long notifications may exist (config; see `lifetime_minutes`).
     pub lifetimes: Lifetimes,
+    /// Popup durations from the config (feat-7); see `windows_duration`.
+    pub popup: PopupDurations,
     /// Resolves path-only links (`/control-panel/homelab`); see
     /// `toast::resolve_link`.
     pub link_base: Option<&'a str>,
@@ -98,6 +100,20 @@ pub struct WinToast {
     /// feat-win-12: when Windows should drop the toast from Notification Center
     /// (Unix ms). `None` = Windows' own default (3 days).
     pub expires_at_ms: Option<u64>,
+}
+
+/// Windows offers two popup durations only: `short` (about 7 s) and
+/// `long` (about 25 s). A configured duration picks whichever it is
+/// nearer to; the defaults (info 10 s, warning 30 s) keep the mapping
+/// they had before feat-7 made them configurable.
+pub const WINDOWS_LONG_FROM_MS: u32 = 16_000;
+
+pub fn windows_duration(popup_ms: u32) -> &'static str {
+    if popup_ms >= WINDOWS_LONG_FROM_MS {
+        "long"
+    } else {
+        "short"
+    }
 }
 
 /// When Windows should drop the toast (`ToastNotification.ExpirationTime`),
@@ -166,8 +182,10 @@ pub fn build_toast(env: &Envelope, input: &BuildInput) -> WinToast {
     }
     match priority {
         Some("critical") => toast_attrs.push(("scenario", input.critical_scenario.attr().into())),
-        Some("warning") => toast_attrs.push(("duration", "long".into())),
-        _ => toast_attrs.push(("duration", "short".into())),
+        Some("warning") => {
+            toast_attrs.push(("duration", windows_duration(input.popup.warning_ms).into()))
+        }
+        _ => toast_attrs.push(("duration", windows_duration(input.popup.info_ms).into())),
     }
     toast_attrs.push((
         "displayTimestamp",
@@ -603,12 +621,23 @@ mod tests {
                 warning: None,
                 critical: None,
             },
+            popup: PopupDurations::default(),
             link_base: None,
         }
     }
 
     fn build(json: &str) -> WinToast {
         build_toast(&env(json), &input())
+    }
+
+    #[test]
+    fn feat_7_configured_popup_durations_pick_short_or_long() {
+        assert_eq!(windows_duration(10_000), "short");
+        assert_eq!(windows_duration(30_000), "long");
+        let e = env(r#"{"v":1,"id":"x","priority":"info","title":{"nl":"a"}}"#);
+        let mut input = input();
+        input.popup.info_ms = 60_000;
+        assert!(build_toast(&e, &input).xml.contains(r#"duration="long""#));
     }
 
     #[test]

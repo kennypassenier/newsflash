@@ -2,7 +2,9 @@
 //! the field and the remedy; the token never comes from the config
 //! file itself.
 
-use courier_core::toast::{Language, Lifetimes, MAX_LIFETIME_MINUTES, resolve_link};
+use courier_core::toast::{
+    Language, Lifetimes, MAX_LIFETIME_MINUTES, MAX_POPUP_SECONDS, PopupDurations, resolve_link,
+};
 use std::path::{Path, PathBuf};
 
 pub const DEFAULT_TTL_MINUTES: u64 = 10;
@@ -29,6 +31,8 @@ pub struct Config {
     pub interactive_wait_margin_ms: u32,
     /// How long notifications may exist (ephemeral + per priority).
     pub lifetimes: Lifetimes,
+    /// How long info and warning popups stay on screen (feat-7).
+    pub popup: PopupDurations,
     /// Base for path-only links (`/control-panel/homelab` → Home
     /// Assistant). `None` = such links are not offered.
     pub link_base_url: Option<String>,
@@ -59,6 +63,8 @@ struct RawConfig {
     expire_info_minutes: Option<u32>,
     expire_warning_minutes: Option<u32>,
     expire_critical_minutes: Option<u32>,
+    popup_info_seconds: Option<u32>,
+    popup_warning_seconds: Option<u32>,
     link_base_url: Option<String>,
 }
 
@@ -167,6 +173,29 @@ pub fn load(path: &Path) -> Result<Config, String> {
         warning: minutes("expire_warning_minutes", raw.expire_warning_minutes)?,
         critical: minutes("expire_critical_minutes", raw.expire_critical_minutes)?,
     };
+    let seconds = |key: &str, v: Option<u32>, default: u32| -> Result<u32, String> {
+        match v {
+            Some(s) if !(1..=MAX_POPUP_SECONDS).contains(&s) => Err(format!(
+                "{key} = {s} is out of range. Use 1 to {MAX_POPUP_SECONDS} seconds, or remove \
+                 the key for the default ({default} s). Critical popups always stay until \
+                 answered and have no such key."
+            )),
+            Some(s) => Ok(s),
+            None => Ok(default),
+        }
+    };
+    let popup = PopupDurations {
+        info_ms: seconds(
+            "popup_info_seconds",
+            raw.popup_info_seconds,
+            courier_core::toast::DEFAULT_POPUP_INFO_SECONDS,
+        )? * 1000,
+        warning_ms: seconds(
+            "popup_warning_seconds",
+            raw.popup_warning_seconds,
+            courier_core::toast::DEFAULT_POPUP_WARNING_SECONDS,
+        )? * 1000,
+    };
     let link_base_url = match raw.link_base_url {
         None => None,
         Some(u) if resolve_link(&u, None).is_some() => Some(u.trim_end_matches('/').to_string()),
@@ -188,6 +217,7 @@ pub fn load(path: &Path) -> Result<Config, String> {
         token,
         interactive_wait_margin_ms,
         lifetimes,
+        popup,
         link_base_url,
     })
 }

@@ -62,6 +62,25 @@ fn m2_ar10_config_validation_names_field_and_remedy() {
     );
     let err = config::load(&p).unwrap_err();
     assert!(err.contains("link_base_url"), "{err}");
+
+    // feat-7: popup durations default to 10 s / 30 s, are configurable,
+    // and an out-of-range value is refused with its remedy.
+    assert_eq!((c.popup.info_ms, c.popup.warning_ms), (10_000, 30_000));
+    let p = write_config(
+        "popup-ok.toml",
+        "hub_url = \"http://h:1\"\npopup_info_seconds = 5\npopup_warning_seconds = 90",
+    );
+    let c = config::load(&p).unwrap();
+    assert_eq!((c.popup.info_ms, c.popup.warning_ms), (5_000, 90_000));
+    let p = write_config(
+        "popup-bad.toml",
+        "hub_url = \"http://h:1\"\npopup_info_seconds = 0",
+    );
+    let err = config::load(&p).unwrap_err();
+    assert!(
+        err.contains("popup_info_seconds") && err.contains("1 to 3600"),
+        "{err}"
+    );
     unsafe { std::env::remove_var("KYU_TOKEN") };
 
     // Inline token refused (AR10).

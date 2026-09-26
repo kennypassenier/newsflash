@@ -43,6 +43,13 @@ hub_url = "http://127.0.0.1:8080"
 #expire_warning_minutes = 240
 #expire_critical_minutes = 1440
 
+# How long a popup stays on screen before it moves to the history
+# (seconds, 1 to 3600). Critical popups always stay until answered.
+# Windows only knows short (~7 s) and long (~25 s): 16 s or more
+# means long there.
+#popup_info_seconds = 10
+#popup_warning_seconds = 30
+
 # Where path-only links from pipeline-v2 point (click_url
 # "/control-panel/homelab" → Home Assistant). Omit = such links are
 # not offered; full http(s) links always work.

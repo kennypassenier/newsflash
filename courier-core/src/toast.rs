@@ -84,6 +84,30 @@ pub struct Lifetimes {
     pub critical: Option<u32>,
 }
 
+/// How long a popup stays on screen before it moves to the history
+/// (feat-7). `critical` has no entry on purpose: it stays until answered,
+/// the promise `critical` exists for (Kenny, 2026-09-26: only info and
+/// warning are tunable).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PopupDurations {
+    pub info_ms: u32,
+    pub warning_ms: u32,
+}
+
+pub const DEFAULT_POPUP_INFO_SECONDS: u32 = 10;
+pub const DEFAULT_POPUP_WARNING_SECONDS: u32 = 30;
+/// An hour on screen is already a sticky note; more is a config typo.
+pub const MAX_POPUP_SECONDS: u32 = 3600;
+
+impl Default for PopupDurations {
+    fn default() -> Self {
+        PopupDurations {
+            info_ms: DEFAULT_POPUP_INFO_SECONDS * 1000,
+            warning_ms: DEFAULT_POPUP_WARNING_SECONDS * 1000,
+        }
+    }
+}
+
 pub const DEFAULT_EPHEMERAL_MINUTES: u32 = 10;
 /// Windows keeps a toast at most 3 days; a longer lifetime means nothing.
 pub const MAX_LIFETIME_MINUTES: u32 = 3 * 24 * 60;
@@ -183,13 +207,15 @@ pub fn pick(text: Option<&LocalizedText>, lang: Language) -> Option<String> {
         .map(str::to_owned)
 }
 
-/// Priority → (urgency, expire) per the AR11 table. Unknown or absent
-/// priorities read as `info` — tolerant in the same direction as AR4.
-fn urgency_expire(priority: Option<&str>) -> (Urgency, u32) {
+/// Priority → (urgency, expire) per the AR11 table, with the popup
+/// durations from the config (feat-7). Unknown or absent priorities
+/// read as `info` — tolerant in the same direction as AR4. `critical`
+/// stays pinned at 0 (persistent), whatever the config says.
+fn urgency_expire(priority: Option<&str>, popup: &PopupDurations) -> (Urgency, u32) {
     match priority {
         Some("critical") => (Urgency::Critical, 0),
-        Some("warning") => (Urgency::Normal, 30_000),
-        _ => (Urgency::Normal, 10_000),
+        Some("warning") => (Urgency::Normal, popup.warning_ms),
+        _ => (Urgency::Normal, popup.info_ms),
     }
 }
 
@@ -247,8 +273,12 @@ pub fn resolve_texts(env: &Envelope, lang: Language) -> (String, String) {
 }
 
 pub fn toast_spec(env: &Envelope, lang: Language) -> ToastSpec {
+    toast_spec_with(env, lang, &PopupDurations::default())
+}
+
+pub fn toast_spec_with(env: &Envelope, lang: Language, popup: &PopupDurations) -> ToastSpec {
     let (summary, body) = resolve_texts(env, lang);
-    let (urgency, expire_ms) = urgency_expire(env.priority.as_deref());
+    let (urgency, expire_ms) = urgency_expire(env.priority.as_deref(), popup);
     ToastSpec {
         summary,
         body: escape_markup(&body),
@@ -319,6 +349,25 @@ mod tests {
         let e = env(r#"{"v":1,"id":"x","priority":"warning","title":{"nl":"a"}}"#);
         let t = toast_spec(&e, Language::Nl);
         assert_eq!((t.urgency, t.expire_ms), (Urgency::Normal, 30_000));
+    }
+
+    #[test]
+    fn feat_7_configured_popup_durations_apply_to_info_and_warning_only() {
+        let popup = PopupDurations {
+            info_ms: 4_000,
+            warning_ms: 60_000,
+        };
+        let spec = |p: &str| {
+            let e = env(&format!(
+                r#"{{"v":1,"id":"x","priority":"{p}","title":{{"nl":"a"}}}}"#
+            ));
+            let t = toast_spec_with(&e, Language::Nl, &popup);
+            (t.urgency, t.expire_ms)
+        };
+        assert_eq!(spec("info"), (Urgency::Normal, 4_000));
+        assert_eq!(spec("warning"), (Urgency::Normal, 60_000));
+        assert_eq!(spec("shouting"), (Urgency::Normal, 4_000));
+        assert_eq!(spec("critical"), (Urgency::Critical, 0));
     }
 
     #[test]
