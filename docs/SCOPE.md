@@ -7,8 +7,8 @@ way.
 
 Bootstrapped from the Kyu Integration Study
 (`ObsidianVault/Home Assistant/Documentation/Kyu Integration Study.md`,
-§5.P3, §5.P2, §7, §8b), where newsflash (P3) was rated **Essential**
-and vault-courier (P2) **Desired** on 2026-08-28.
+§5.P3, §5.P2, §7, §8b), where newsflash (that study's P3) was rated
+**Essential** and vault-courier (its P2) **Desired** on 2026-08-28.
 
 ## Repo structure (S1 — decided, amended)
 
@@ -124,7 +124,8 @@ Each of these must end up test-proven:
   Phase 4). A schema change there is a **mini-round trigger** here,
   never a silent adjustment.
 - Toward the hub, `~/Projects/kyu/docs/USER_GUIDE.md` is the
-  interface authority (K2 receive, K3 ack, K7 policy, W2 tokens).
+  interface authority (kyu's K2 receive, K3 ack, K7 policy, W2 tokens —
+  kyu's own IDs, not this project's).
 
 ## Non-goals
 

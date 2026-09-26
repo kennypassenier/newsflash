@@ -20,6 +20,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — see "Open work" below for what starts as its own mini-round |
+| Next action | waiting on Kenny: nothing in progress here |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
