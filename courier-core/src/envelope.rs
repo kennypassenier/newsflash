@@ -81,6 +81,13 @@ pub struct Envelope {
     /// the desktop drops the notification this long after publishing.
     #[serde(default, deserialize_with = "lenient")]
     pub expires_in_minutes: Option<u32>,
+    /// pipeline-v2's gate verdict at publish time (feat-8): `live`,
+    /// `deferred` (Do Not Disturb, outside the active hours, or a media
+    /// session: parked for the hourly bulletin) or `dropped` (an
+    /// ephemeral message under those conditions, discarded by Home
+    /// Assistant). Measured in `script.notification_dispatch`, 2026-09-26.
+    #[serde(default, deserialize_with = "lenient")]
+    pub gate_outcome: Option<String>,
     /// pipeline-v2's channel data. The courier reads exactly one thing
     /// from it: the action buttons (`data.action_buttons`). Everything
     /// else in it (lights, speakers, push targets) belongs to other

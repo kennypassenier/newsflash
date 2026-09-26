@@ -544,3 +544,15 @@ knobs are configuration, contract values stay pinned). Windows has only
 `short` (~7 s) and `long` (~25 s); a configured duration picks the
 nearer one, with the boundary at 16 s, so the defaults keep their old
 mapping. Code-enforced (`urgency_expire`, `windows_duration`).
+
+### arch-7 · The desktop follows Home Assistant's gate (2026-09-26)
+Measured in `script.notification_dispatch`: a non-critical message is
+`deferred` under Do Not Disturb, outside `schedule.notification_active_hours`
+or during a media session, and `dropped` when it is also `ephemeral`; the
+hub copy is published at that moment. Kenny chose (form answer
+`deferred-quiet: A`) that the desktop does what Home Assistant does:
+deferred arrives quietly, dropped not at all, critical always pops up.
+Linux uses urgency `low`, which Plasma by default files in the history
+without a popup (Plasma's own setting, so configuration-dependent);
+Windows sets `ToastNotification.SuppressPopup` and silences the toast
+(code-enforced). The chime is skipped for quiet messages on both.

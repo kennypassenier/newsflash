@@ -22,6 +22,9 @@ pub enum Language {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Urgency {
+    /// feat-8 quiet delivery: Plasma's default is no popup for low
+    /// urgency, straight into the history.
+    Low,
     Normal,
     Critical,
 }
@@ -29,6 +32,7 @@ pub enum Urgency {
 impl Urgency {
     pub fn as_notify_send_arg(self) -> &'static str {
         match self {
+            Urgency::Low => "low",
             Urgency::Normal => "normal",
             Urgency::Critical => "critical",
         }
@@ -82,6 +86,29 @@ pub struct Lifetimes {
     pub info: Option<u32>,
     pub warning: Option<u32>,
     pub critical: Option<u32>,
+}
+
+/// How a message reaches the desktop (feat-8, Kenny 2026-09-26: the
+/// desktop follows Home Assistant's own gate). `critical` always pops
+/// up, whatever the gate said.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Presentation {
+    Popup,
+    /// No popup and no sound: straight into the notification history.
+    Quiet,
+    /// Home Assistant discarded it; the desktop acks and shows nothing.
+    Skip,
+}
+
+pub fn presentation(env: &Envelope) -> Presentation {
+    if env.priority.as_deref() == Some("critical") {
+        return Presentation::Popup;
+    }
+    match env.gate_outcome.as_deref() {
+        Some("deferred") => Presentation::Quiet,
+        Some("dropped") => Presentation::Skip,
+        _ => Presentation::Popup,
+    }
 }
 
 /// How long a popup stays on screen before it moves to the history
@@ -279,6 +306,11 @@ pub fn toast_spec(env: &Envelope, lang: Language) -> ToastSpec {
 pub fn toast_spec_with(env: &Envelope, lang: Language, popup: &PopupDurations) -> ToastSpec {
     let (summary, body) = resolve_texts(env, lang);
     let (urgency, expire_ms) = urgency_expire(env.priority.as_deref(), popup);
+    let urgency = if presentation(env) == Presentation::Quiet {
+        Urgency::Low
+    } else {
+        urgency
+    };
     ToastSpec {
         summary,
         body: escape_markup(&body),
@@ -349,6 +381,37 @@ mod tests {
         let e = env(r#"{"v":1,"id":"x","priority":"warning","title":{"nl":"a"}}"#);
         let t = toast_spec(&e, Language::Nl);
         assert_eq!((t.urgency, t.expire_ms), (Urgency::Normal, 30_000));
+    }
+
+    #[test]
+    fn feat_8_the_gate_decides_quiet_skip_or_popup_and_critical_always_pops() {
+        let p = |json: &str| presentation(&env(json));
+        assert_eq!(
+            p(r#"{"v":1,"id":"x","gate_outcome":"live","title":{"nl":"a"}}"#),
+            Presentation::Popup
+        );
+        assert_eq!(
+            p(r#"{"v":1,"id":"x","title":{"nl":"a"}}"#),
+            Presentation::Popup
+        );
+        assert_eq!(
+            p(r#"{"v":1,"id":"x","gate_outcome":"deferred","title":{"nl":"a"}}"#),
+            Presentation::Quiet
+        );
+        assert_eq!(
+            p(r#"{"v":1,"id":"x","gate_outcome":"dropped","title":{"nl":"a"}}"#),
+            Presentation::Skip
+        );
+        assert_eq!(
+            p(
+                r#"{"v":1,"id":"x","priority":"critical","gate_outcome":"deferred","title":{"nl":"a"}}"#
+            ),
+            Presentation::Popup
+        );
+        let quiet = env(
+            r#"{"v":1,"id":"x","priority":"warning","gate_outcome":"deferred","title":{"nl":"a"}}"#,
+        );
+        assert_eq!(toast_spec(&quiet, Language::Nl).urgency, Urgency::Low);
     }
 
     #[test]

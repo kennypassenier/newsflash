@@ -648,3 +648,46 @@ fn live_link_button_opens_the_page_and_publishes_no_action_result() {
     sigterm(&child);
     assert_eq!(wait_exit(&mut child, 10), Some(0));
 }
+
+fn gated_poll(hub_id: &str, gate: &str, title: &str) -> (u16, String) {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    (
+        200,
+        format!(
+            r#"{{"id":"{hub_id}","topic":"notify.kenny","attempt":1,"published_at":{now},"content_type":"application/json","payload":{{"v":1,"id":"p-{hub_id}","gate_outcome":"{gate}","title":{{"nl":"{title}"}}}}}}"#
+        ),
+    )
+}
+
+/// feat-8 through the real binary: a `dropped` message is acked and
+/// never rendered; a `deferred` one is rendered at low urgency (Plasma
+/// puts those straight into the history, no popup).
+#[test]
+fn feat_8_dropped_is_acked_unshown_and_deferred_renders_low() {
+    let env = test_env("gate");
+    let hub = scripted_hub(vec![
+        gated_poll("hub-drop-1", "dropped", "Weggegooid"),
+        gated_poll("hub-def-1", "deferred", "Uitgesteld"),
+    ]);
+    let mut child = env.spawn_courier(&hub.addr);
+    wait_until("both acked", 15, || {
+        let u = urls(&hub.requests);
+        u.iter().any(|u| u.contains("/ack/hub-drop-1"))
+            && u.iter().any(|u| u.contains("/ack/hub-def-1"))
+    });
+    sigterm(&child);
+    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    let log = env.read_shim_log();
+    assert!(
+        !log.contains("Weggegooid"),
+        "dropped must not render: {log}"
+    );
+    let deferred = log
+        .lines()
+        .find(|l| l.contains("Uitgesteld"))
+        .unwrap_or_else(|| panic!("deferred must render: {log}"));
+    assert!(deferred.contains("--urgency=low"), "{deferred}");
+}

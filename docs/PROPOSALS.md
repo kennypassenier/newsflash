@@ -107,7 +107,7 @@ not to be disturbed right now", not "released late".
 **So this is no longer an ask:** the field already says what the desktop
 needs. Showing a `deferred` message without popup and sound (straight
 into Notification Center / Plasma history), and a `dropped` one not at
-all, is newsflash's own change, decided in its own mini-round.
+all, is newsflash's own change: built 2026-09-26 as feat-8 (Kenny's form answer A).
 
 ## ask-6 · Don't send the desktop's missed-message notices to the desktop
 

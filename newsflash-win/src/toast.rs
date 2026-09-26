@@ -10,7 +10,7 @@
 use crate::{AUMID, images, registry};
 use courier_core::envelope::Envelope;
 use courier_core::hub::HubMessage;
-use courier_core::toast::{Language, Lifetimes, PopupDurations};
+use courier_core::toast::{Language, Lifetimes, PopupDurations, Presentation, presentation};
 use courier_core::wintoast::{BuildInput, CriticalScenario, WinToast, build_toast, logo_asset};
 use newsflash::config::Config;
 use newsflash::logx;
@@ -128,6 +128,14 @@ impl Desktop for WinDesktop {
     }
 
     fn show(&mut self, message: &HubMessage, env: &Envelope) -> Result<AfterAck, String> {
+        let presentation = presentation(env);
+        if presentation == Presentation::Skip {
+            logx::info(&format!(
+                "{}: dropped by Home Assistant's gate (gate_outcome \"dropped\") — acked, not shown",
+                message.id
+            ));
+            return Ok(Box::new(|| {}));
+        }
         let notifier = self.notifier.clone().ok_or("no toast notifier")?;
         let hero = env.image.as_deref().and_then(|url| {
             images::fetch(url, &self.images, &message.id)
@@ -170,7 +178,11 @@ impl Desktop for WinDesktop {
             ));
         }
         show_built(&notifier, &built, &message.id, &mut self.live)?;
-        let chime = self.chime.clone();
+        let chime = if presentation == Presentation::Quiet {
+            None
+        } else {
+            self.chime.clone()
+        };
         Ok(Box::new(move || {
             if let Some(chime) = &chime {
                 play_chime(chime);
@@ -236,6 +248,11 @@ pub fn show_built(
         toast
             .SetData(&data)
             .map_err(|e| winerr("setting toast data", e))?;
+    }
+    if built.suppress_popup {
+        toast
+            .SetSuppressPopup(true)
+            .map_err(|e| winerr("suppressing the popup", e))?;
     }
     if let Some(at_ms) = built.expires_at_ms {
         // Never in the past: a toast that already outlived its lifetime
@@ -306,6 +323,7 @@ pub fn show_notice(title: &str, body: &str) -> bool {
         dropped_actions: 0,
         dropped_inputs: 0,
         expires_at_ms: None,
+        suppress_popup: false,
     };
     show_built(&n, &built, "notice", &mut VecDeque::new()).is_ok()
 }

@@ -20,7 +20,8 @@ hub_url = "http://127.0.0.1:8080"
 
 # Optional chime, played after each toast (K6). House style:
 # cyberpunk-soft, never metallic. Omit for silence.
-#sound_file = "/home/kenny/Music/chimes/soft-ping.ogg"
+# Kenny's pick (2026-09-26): assets/chimes/newsflash-soft-pulse.wav
+#sound_file = "/home/kenny/.local/share/newsflash/chimes/newsflash-soft-pulse.wav"
 
 # M10: how much longer (ms) the interactive-toast watcher waits above a
 # bounded toast's own expiry before giving up as a safety backstop —
