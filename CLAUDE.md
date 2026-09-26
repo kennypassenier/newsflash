@@ -20,7 +20,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
-| Next action | waiting on Kenny: the windows-update form (install 0.2.0 on this Windows pc); otherwise only the unnamed flake is open |
+| Next action | none: every 2026-09-26 form answer is built and installed; only the unnamed flake stays open |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -76,7 +76,9 @@ is in `docs/WINDOWS.md`.
   (450e016) rebuilds newsflash when the version moves (0.2.0 since PR #5)
   and then runs `newsflash install`, which copies it to `~/.local/bin`,
   writes the chime, sets `sound_file` and restarts the unit (feat-9).
-  Nothing manual is left on Garuda.
+  Nothing manual is left on Garuda. Windows runs 0.2.0 since
+  2026-09-27 00:27 local (installed from WSL with `newsflash-win.exe
+  install`; send-test rendered, log line `newsflash 0.2.0 starting`).
 - **The seven asks are filed** in the vault as `Notification Pipeline V2
   Desktop Cohesion Proposals.md` (2026-09-26); pipeline-v2 decides them
   (ask-4 already decided by Kenny: push implies desktop).
