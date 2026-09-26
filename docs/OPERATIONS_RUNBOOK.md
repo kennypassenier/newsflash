@@ -6,6 +6,21 @@ clone: `git config core.hooksPath .githooks` (see README).
 
 ## R1 · First-time install on the PC
 
+**Shortcut (2026-09-24):** `cargo build --release -p newsflash && ./target/release/newsflash install`
+does steps 1, 2 and 4 in one go:
+- copies the binary to `~/.local/bin`;
+- puts that folder on PATH if needed, through removable drop-ins:
+  `~/.config/environment.d/60-newsflash.conf`,
+  `~/.config/fish/conf.d/newsflash.fish`, and a marked block in
+  `~/.bashrc`/`~/.zshrc` for the shells that exist;
+- writes the unit (keeping latch if installed);
+- writes a starter config on the first run, and enables and starts the
+  unit once a config exists.
+
+You still do step 3 (the token) by hand. `newsflash uninstall` removes
+exactly what install added and keeps the config and state. The manual
+steps below remain valid.
+
 1. Build and install the binary:
    ```
    cd ~/Projects/newsflash && cargo install --path newsflash
@@ -45,8 +60,12 @@ enabling the unit is deployment — AFK queue).
 ## R2 · Update (M5 — no self-update, by decision)
 
 1. `cd ~/Projects/newsflash && git pull`
-2. `cargo install --path newsflash`
-3. `systemctl --user restart newsflash`
+2. `cargo build --release -p newsflash && ./target/release/newsflash install`.
+   This replaces the binary and restarts the unit (the manual route is
+   still `cargo install --path newsflash` +
+   `systemctl --user restart newsflash`).
+3. Windows: rebuild, then `newsflash-win.exe install` (stops, replaces,
+   restarts; see `docs/WINDOWS.md`)
 4. `journalctl --user -u newsflash -n 3` — the startup summary line
    shows the new version.
 

@@ -144,6 +144,46 @@ the specific reason and remedy.
 `every_error_carries_a_remedy`,
 `live_m9_poison_lands_visibly_in_the_dead_letters`.
 
+## feat-2/feat-3 · Installing, reconfiguring, removing
+
+`newsflash setup` opens the wizard. It asks for the hub, then the token
+(checked against the hub before anything is written), then options,
+and then installs. `newsflash install` does the same without a window;
+`newsflash uninstall` reverses it and keeps the config. On Garuda,
+install copies to `~/.local/bin`, adds it to PATH only if it's missing
+(through files uninstall removes again), writes the systemd unit, and
+adds **newsflash setup** to the app menu. Windows: `docs/WINDOWS.md`
+and `docs/SETUP.md`.
+
+## feat-4 · The buttons are the message's own
+
+A message's buttons are its K12 `actions`, or else pipeline-v2's live
+`data.action_buttons` (e.g. plant care: *Water gegeven* / *Snooze 3
+dagen* / *Nog te nat*), or else the default *Gelezen* / *Snooze*. Up to
+5 are shown. A click publishes an `action_result` to `notify.actions`
+with the button's id, and Home Assistant does the rest.
+
+**Proven by:** `the_live_plant_care_message_gets_its_three_buttons`,
+`live_data_action_buttons_become_the_buttons_unless_actions_is_set`.
+
+## feat-5 · Short-lived notifications
+
+A message marked `ephemeral` (the "Beweging" door reminders) exists for
+`ephemeral_minutes` (default 10) after it was sent, then disappears from
+the screen and from the notification history. With
+`expire_info_minutes`, `expire_warning_minutes` or
+`expire_critical_minutes` set, other messages do the same per priority.
+
+**Proven by:** `lifetime_prefers_the_message_then_ephemeral_then_the_priority`,
+render test phase E (closes the notification by its id).
+
+## feat-6 · Links
+
+Clicking the notification itself opens its `click_url`. Links that are
+just a path (`/control-panel/homelab`) need `link_base_url` (Home
+Assistant, `http://10.10.10.2:8123`). Only http(s) links are ever
+opened.
+
 ## What newsflash deliberately does not do
 
 - **No routing or audience logic** — the topic name is the address;
@@ -151,5 +191,4 @@ the specific reason and remedy.
 - **No critical path** — hub down = no toasts, everything else in the
   house unchanged (SCOPE S10).
 - **No TTS** — the envelope's `tts` field is the speaker channel's job.
-- **No click actions** — `click_url` is feature M10, rated Later.
 - **No self-update** — runbook R2 is the update path, by decision (M5).
