@@ -592,3 +592,59 @@ fn m10_multiple_critical_toasts_stay_independently_answerable() {
         "each click must be attributed to its own original envelope, not mixed up"
     );
 }
+
+/// arch-2/arch-4 through the real binary: a live pipeline-v2 message with
+/// `data.action_buttons` including a companion-app link button. The link
+/// button opens its page (xdg-open) and publishes NOTHING; the rendered
+/// argv carries the message's own buttons, not the default pair.
+#[test]
+fn live_link_button_opens_the_page_and_publishes_no_action_result() {
+    let env = test_env("link-button");
+    install_clicking_notify_send(&env, "URI", 0.3);
+    let xdg = env.dir.join("bin").join("xdg-open");
+    std::fs::write(
+        &xdg,
+        format!(
+            "#!/bin/sh\necho \"xdg-open $*\" >> {}\nexit 0\n",
+            env.shim_log.display()
+        ),
+    )
+    .unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&xdg, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    let hub = scripted_hub(vec![(
+        200,
+        format!(
+            r#"{{"id":"hub-link-1","topic":"notify.kenny","attempt":1,"published_at":{now},"content_type":"application/json","payload":{{"v":1,"id":"p-link-1","title":{{"nl":"Planten"}},"data":{{"action_buttons":[{{"action":"PLANTCARE_WATER_z","title":"Water gegeven"}},{{"action":"URI","title":"Bekijk","uri":"http://10.10.10.2:8123/control-panel/plants"}}]}}}}}}"#
+        ),
+    )]);
+    let mut child = env.spawn_courier(&hub.addr);
+
+    wait_until("the link opened", 15, || {
+        env.read_shim_log()
+            .contains("xdg-open http://10.10.10.2:8123/control-panel/plants")
+    });
+    let argv = env.read_shim_log();
+    assert!(
+        argv.contains("-A PLANTCARE_WATER_z=Water gegeven") && argv.contains("-A URI=Bekijk"),
+        "the message's own buttons are rendered: {argv}"
+    );
+    assert!(!argv.contains("gelezen=Gelezen"), "no default pair: {argv}");
+    // Give a wrongly-published action_result time to show up, then check.
+    std::thread::sleep(Duration::from_millis(500));
+    assert!(
+        !urls(&hub.requests)
+            .iter()
+            .any(|u| u.starts_with("POST /t/notify.actions")),
+        "a link button must not reply to notify.actions"
+    );
+    sigterm(&child);
+    assert_eq!(wait_exit(&mut child, 10), Some(0));
+}

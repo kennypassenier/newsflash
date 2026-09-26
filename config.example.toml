@@ -31,3 +31,19 @@ hub_url = "http://127.0.0.1:8080"
 # Fallback token source when KYU_TOKEN is not set: a file holding
 # the app token from the hub's /apps page. Must be chmod 600.
 #token_file = "/home/kenny/.config/newsflash/token"
+
+# How long a notification may exist, in minutes (both desktops). A
+# message marked `ephemeral` by the sender (e.g. the "Beweging" door
+# reminders) disappears this long after it was sent — from the screen and
+# from the notification history. Default 10.
+#ephemeral_minutes = 10
+# Per priority, for every other message. Omit = keep them (Windows: up
+# to 3 days in Notification Center; Plasma: until you clear history).
+#expire_info_minutes = 60
+#expire_warning_minutes = 240
+#expire_critical_minutes = 1440
+
+# Where path-only links from pipeline-v2 point (click_url
+# "/control-panel/homelab" → Home Assistant). Omit = such links are
+# not offered; full http(s) links always work.
+#link_base_url = "http://10.10.10.2:8123"

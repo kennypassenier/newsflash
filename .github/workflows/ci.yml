@@ -28,3 +28,27 @@ jobs:
             echo "courier-core imports ambient I/O (AR3) — move it to the shell"
             exit 1
           fi
+
+  # The Windows desktop (newsflash-win, docs/WINDOWS.md) — built, linted
+  # and tested natively. The Linux job above only sees its platform-
+  # neutral half (the WinRT/COM shell is cfg(windows)).
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.97.1
+          components: clippy
+      - name: Lint (warnings are errors)
+        run: cargo clippy -p newsflash-win --all-targets -- -D warnings
+      - name: Tests (core + windows shell)
+        run: cargo test -p courier-core -p newsflash-win
+      - name: Release build
+        run: cargo build --release -p newsflash-win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: newsflash-windows
+          path: |
+            target/release/newsflash-win.exe
+            target/release/newsflash-winw.exe

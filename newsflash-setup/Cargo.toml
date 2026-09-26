@@ -1,0 +1,15 @@
+# The install wizard (docs/SETUP.md): one egui window, the same pages on
+# Windows and Linux. UI only — each platform binary implements `Backend`
+# (newsflash on Linux, newsflash-win on Windows) with its own installer,
+# so this crate depends on neither and there is no cycle.
+[package]
+name = "newsflash-setup"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+eframe = { version = "0.36", default-features = false, features = ["default_fonts", "glow", "wayland", "x11"] }
+
+[dev-dependencies]
+egui_kittest = "0.36"

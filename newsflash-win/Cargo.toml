@@ -1,0 +1,54 @@
+# The Windows 11 desktop for the same kyu subscription (docs/WINDOWS.md).
+# Shares the loop, hub client, config and dedup store with the Linux
+# binary via the `newsflash` library, and all toast decisions with
+# courier-core (`wintoast`). On non-Windows targets both binaries are
+# stubs, so `cargo test --all` on Linux keeps working.
+[package]
+name = "newsflash-win"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# Two binaries, like python.exe / pythonw.exe: the console one for the
+# CLI and foreground debugging, the windowless one for logon autostart
+# and COM activation (no console window ever flashes). `install` copies
+# them as newsflash.exe / newsflashw.exe.
+[[bin]]
+name = "newsflash-win"
+path = "src/bin/console.rs"
+
+[[bin]]
+name = "newsflash-winw"
+path = "src/bin/windowless.rs"
+
+[dependencies]
+newsflash = { path = "../newsflash" }
+newsflash-setup = { path = "../newsflash-setup" }
+courier-core = { path = "../courier-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = "0.8"
+ureq = { version = "2", default-features = false }
+signal-hook = "0.3"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+    "Data_Xml_Dom",
+    "Foundation",
+    "UI_Notifications",
+    "Win32_Foundation",
+    "Win32_Media_Audio",
+    "Win32_Security",
+    "Win32_Security_Cryptography",
+    "Win32_System_Com",
+    "Win32_System_Console",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Notifications",
+    "Win32_UI_Shell",
+] }
+windows-core = "0.62"
+
+[dev-dependencies]
+tiny_http = "0.12"

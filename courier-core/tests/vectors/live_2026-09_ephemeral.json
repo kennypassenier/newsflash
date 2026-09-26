@@ -1,0 +1,47 @@
+{
+  "ack_id": "",
+  "audience": "kenny",
+  "click_url": "",
+  "data": {
+    "action_buttons": [],
+    "allow_duplicates": false,
+    "color": "Green",
+    "flip_active_at_publish": false,
+    "light_areas": [],
+    "light_entities": [
+      "light.office_light",
+      "light.office_light_left",
+      "light.office_light_right"
+    ],
+    "notification_types": [
+      "tts",
+      "glow"
+    ],
+    "parents_speaker": "media_player.living_room_speaker",
+    "push_targets": [
+      "kenny"
+    ],
+    "speak_to_parents": false,
+    "tts_target": "media_player.kenny_pc"
+  },
+  "ephemeral": true,
+  "gate_outcome": "live",
+  "id": "20260905T183000248801-1596",
+  "kind": "notification",
+  "message": {
+    "en": "Five minutes outside. Door open, go.",
+    "nl": "Vijf minuten buiten. Deur open en gaan."
+  },
+  "priority": "critical",
+  "source": "ha",
+  "title": {
+    "en": "Movement",
+    "nl": "Beweging"
+  },
+  "ts": "2026-09-05T18:30:00.248925+02:00",
+  "tts": {
+    "en": "Five minutes outside. Door open, go.",
+    "nl": "Vijf minuten buiten. Deur open en gaan."
+  },
+  "v": 1
+}

@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 courier-core = { path = "../courier-core" }
+newsflash-setup = { path = "../newsflash-setup" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 ureq = { version = "2", default-features = false }

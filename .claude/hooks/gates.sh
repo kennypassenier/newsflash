@@ -25,6 +25,18 @@ cargo clippy --all-targets -- -D warnings
 gate_glob suite '*.rs' 'Cargo.toml' 'Cargo.lock' '*/Cargo.toml' -- \
   cargo test --all
 
+# The Windows shell (newsflash-win) is cfg(windows): the lint above only
+# sees its stubs. Cross-lint it when the toolchain is here (cargo-xwin +
+# the msvc target, docs/WINDOWS.md "Building"); CI's windows job always
+# does, so a machine without it is not blocked.
+if command -v cargo-xwin >/dev/null 2>&1 \
+  && rustup target list --installed 2>/dev/null | grep -q x86_64-pc-windows-msvc; then
+  XWIN_ACCEPT_LICENSE=1 cargo xwin clippy -p newsflash-win \
+    --target x86_64-pc-windows-msvc --all-targets -- -D warnings
+else
+  echo "note: cargo-xwin/msvc target absent — Windows lint left to CI" >&2
+fi
+
 # AR3: courier-core stays free of ambient I/O. The dependency list is
 # the primary fence; this grep catches std back doors.
 if grep -rnE '^[[:space:]]*use[[:space:]]+(ureq|std::(fs|net|process|io))' courier-core/src/; then
