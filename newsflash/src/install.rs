@@ -356,6 +356,15 @@ pub fn install_with(
         return Ok(());
     }
 
+    match crate::chime::ensure(&layout.data_dir.join("newsflash"), &layout.user_config())? {
+        crate::chime::Outcome::Configured(wav) => {
+            log(format!("chime: sound_file now points at {}", wav.display()))
+        }
+        crate::chime::Outcome::KeptExisting(s) => {
+            log(format!("chime: keeping the sound_file you set ({s})"))
+        }
+    }
+
     let enable = if options.autostart {
         "enable"
     } else {

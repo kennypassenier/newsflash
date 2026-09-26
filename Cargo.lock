@@ -382,7 +382,7 @@ dependencies = [
 
 [[package]]
 name = "courier-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1437,7 +1437,7 @@ dependencies = [
 
 [[package]]
 name = "newsflash"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "courier-core",
  "newsflash-setup",
@@ -1451,7 +1451,7 @@ dependencies = [
 
 [[package]]
 name = "newsflash-setup"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "eframe",
  "egui_kittest",
@@ -1459,7 +1459,7 @@ dependencies = [
 
 [[package]]
 name = "newsflash-win"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "courier-core",
  "newsflash",

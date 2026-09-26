@@ -1,6 +1,7 @@
 //! newsflash as a library, so the integration and live tests can
 //! drive the same modules the binary composes (AR18).
 
+pub mod chime;
 pub mod config;
 pub mod config_edit;
 pub mod hub_client;

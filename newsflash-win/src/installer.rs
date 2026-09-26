@@ -162,6 +162,14 @@ pub fn install(options: &Options, log: &mut dyn FnMut(String)) -> Result<Install
         ));
         return Ok(Installed::NeedsConfig);
     }
+    match newsflash::chime::ensure(&paths::data_dir(), &config_path)? {
+        newsflash::chime::Outcome::Configured(wav) => {
+            log(format!("chime: sound_file now points at {}", wav.display()))
+        }
+        newsflash::chime::Outcome::KeptExisting(s) => {
+            log(format!("chime: keeping the sound_file you set ({s})"))
+        }
+    }
     if let Err(remedy) = crate::app::load_config() {
         return Ok(Installed::ConfigUnusable(remedy));
     }
