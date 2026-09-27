@@ -179,16 +179,45 @@ fn sigterm(child: &Child) {
         .status();
 }
 
-fn wait_exit(child: &mut Child, secs: u64) -> Option<i32> {
+/// Where every thread of a stuck courier is blocked, from procfs: the
+/// kernel wait channel names the syscall family (poll, futex, pipe…).
+fn thread_states(pid: u32) -> String {
+    let Ok(tasks) = std::fs::read_dir(format!("/proc/{pid}/task")) else {
+        return "(no /proc entry)".into();
+    };
+    let mut out = String::new();
+    for t in tasks.flatten() {
+        let path = t.path();
+        let read = |f: &str| std::fs::read_to_string(path.join(f)).unwrap_or_default();
+        out.push_str(&format!(
+            "  tid {} comm={} wchan={}\n",
+            t.file_name().to_string_lossy(),
+            read("comm").trim(),
+            read("wchan").trim()
+        ));
+    }
+    out
+}
+
+/// The unnamed flake of 2026-09-26 (rule 8a) timed out here once and
+/// left nothing behind; a timeout now reports the journal, the shim log
+/// and each thread's wait channel, so the next occurrence names its cause.
+fn wait_exit(child: &mut Child, secs: u64, env: Option<&TestEnv>) -> Option<i32> {
     let deadline = Instant::now() + Duration::from_secs(secs);
     loop {
         if let Ok(Some(status)) = child.try_wait() {
             return status.code();
         }
         if Instant::now() >= deadline {
+            let threads = thread_states(child.id());
+            let (journal, shims) = env
+                .map(|e| (e.read_journal(), e.read_shim_log()))
+                .unwrap_or_default();
             let _ = child.kill();
             let _ = child.wait();
-            panic!("courier did not exit in time");
+            panic!(
+                "courier did not exit in time\nthreads:\n{threads}journal:\n{journal}\nshim log:\n{shims}"
+            );
         }
         std::thread::sleep(Duration::from_millis(50));
     }
@@ -243,7 +272,7 @@ fn ar21_archived_flow_unarchives_resumes_and_renders() {
         env.read_shim_log().contains("Na de winterslaap")
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 
     let calls = urls(&hub.requests);
     let unarchive_at = calls
@@ -284,7 +313,7 @@ fn ar9_k9_auth_rejection_is_named_with_remedy_and_leaks_no_token() {
             .any(|u| u.contains("/policy") && u.starts_with("GET"))
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 
     let journal = env.read_journal();
     assert!(journal.contains("re-mint"), "remedy missing: {journal}");
@@ -317,7 +346,7 @@ fn ar22_no_polling_while_the_daemon_is_absent() {
     });
     assert!(env.read_journal().contains("notification daemon present"));
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 }
 
 #[test]
@@ -344,7 +373,7 @@ fn k4_s6b_exactly_one_render_across_a_hard_kill_and_redelivery() {
             .any(|u| u.contains("/ack/hub-dup-1"))
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 
     let renders = env
         .read_shim_log()
@@ -383,7 +412,7 @@ fn k3_ar22_render_failure_nacks_and_reprobes() {
             >= 2
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
     assert!(env.read_journal().contains("render failed"));
 }
 
@@ -396,7 +425,7 @@ fn m4_m11_sigterm_settles_and_the_journal_carries_the_lifecycle() {
         urls(&hub.requests).iter().any(|u| u.contains("/next"))
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 
     let journal = env.read_journal();
     for expected in [
@@ -446,7 +475,7 @@ fn m10_a_click_is_republished_as_an_action_result_on_notify_actions() {
             .any(|u| u.starts_with("POST /t/notify.actions"))
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 
     let seen = hub.requests.lock().unwrap();
     let ack_idx = seen
@@ -569,7 +598,7 @@ fn m10_multiple_critical_toasts_stay_independently_answerable() {
             >= 2
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 
     let seen = hub.requests.lock().unwrap();
     let original_ids: std::collections::HashSet<String> = seen
@@ -646,7 +675,7 @@ fn live_link_button_opens_the_page_and_publishes_no_action_result() {
         "a link button must not reply to notify.actions"
     );
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
 }
 
 fn gated_poll(hub_id: &str, gate: &str, title: &str) -> (u16, String) {
@@ -679,7 +708,7 @@ fn feat_8_dropped_is_acked_unshown_and_deferred_renders_low() {
             && u.iter().any(|u| u.contains("/ack/hub-def-1"))
     });
     sigterm(&child);
-    assert_eq!(wait_exit(&mut child, 10), Some(0));
+    assert_eq!(wait_exit(&mut child, 10, Some(&env)), Some(0));
     let log = env.read_shim_log();
     assert!(
         !log.contains("Weggegooid"),
@@ -690,4 +719,21 @@ fn feat_8_dropped_is_acked_unshown_and_deferred_renders_low() {
         .find(|l| l.contains("Uitgesteld"))
         .unwrap_or_else(|| panic!("deferred must render: {log}"));
     assert!(deferred.contains("--urgency=low"), "{deferred}");
+}
+
+/// The timeout report itself (rule 7e: the diagnostic is proven by
+/// making it fire): a process that never exits yields the thread list.
+#[test]
+fn a_stuck_child_is_reported_with_its_thread_states() {
+    let mut child = Command::new("sleep").arg("30").spawn().unwrap();
+    let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        wait_exit(&mut child, 0, None);
+    }))
+    .unwrap_err();
+    let text = panic.downcast_ref::<String>().cloned().unwrap_or_default();
+    assert!(text.contains("did not exit in time"), "{text}");
+    assert!(
+        text.contains("comm=sleep") && text.contains("wchan="),
+        "{text}"
+    );
 }

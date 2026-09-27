@@ -71,7 +71,12 @@ is in `docs/WINDOWS.md`.
   with "courier did not exit in time" (10 s after SIGTERM) at load
   average 54 on the WSL box; 6 plain reruns and 4 reruns under 48
   busy-loop CPU hogs all passed in ~2.5 s. CPU load alone does not
-  reproduce it; the cause is not named yet.
+  reproduce it; the cause is not named yet. 2026-09-27: 24 more runs,
+  eight binaries at a time, all passed; the failing run's temp dir no
+  longer exists. The tests' exit wait now reports the journal, the shim
+  log and every thread's kernel wait channel on a timeout (proven by
+  `a_stuck_child_is_reported_with_its_thread_states`), so the next
+  occurrence names its own cause. Stays open until then.
 - **Garuda picks everything up through `resume`:** workstation ws-tools
   (450e016) rebuilds newsflash when the version moves (0.2.0 since PR #5)
   and then runs `newsflash install`, which copies it to `~/.local/bin`,
