@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn w6_a_png_is_cached_under_a_sanitized_hub_id() {
+    fn feat_win_6_a_png_is_cached_under_a_sanitized_hub_id() {
         let url = serve("image/png", b"\x89PNG fake".to_vec());
         let dir = temp("ok");
         let path = fetch(&format!("{url}/cam.png"), &dir, "../../evil\\id").unwrap();
@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn w6_non_images_and_oversized_images_are_refused() {
+    fn feat_win_6_non_images_and_oversized_images_are_refused() {
         let url = serve("text/html", b"<html>".to_vec());
         assert!(
             fetch(&url, &temp("html"), "1")
@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn w6_https_and_other_schemes_are_refused_with_a_reason() {
+    fn feat_win_6_https_and_other_schemes_are_refused_with_a_reason() {
         assert!(
             fetch("https://x/y.png", &temp("tls"), "3")
                 .unwrap_err()

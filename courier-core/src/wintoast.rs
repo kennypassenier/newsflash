@@ -655,7 +655,7 @@ mod tests {
     }
 
     #[test]
-    fn w1_priorities_map_to_duration_and_scenario() {
+    fn feat_win_1_priorities_map_to_duration_and_scenario() {
         let info = build(r#"{"v":1,"id":"x","priority":"info","title":{"nl":"a"}}"#);
         assert!(info.xml.contains(r#"duration="short""#));
         assert!(!info.xml.contains("scenario="));
@@ -669,7 +669,7 @@ mod tests {
     }
 
     #[test]
-    fn w1_the_critical_scenario_is_configurable() {
+    fn feat_win_1_the_critical_scenario_is_configurable() {
         let mut i = input();
         i.critical_scenario = CriticalScenario::Urgent;
         let t = build_toast(
@@ -685,7 +685,7 @@ mod tests {
     }
 
     #[test]
-    fn w1_the_logo_follows_the_priority() {
+    fn feat_win_1_the_logo_follows_the_priority() {
         assert_eq!(logo_asset(Some("critical")), "critical.png");
         assert_eq!(logo_asset(Some("warning")), "warning.png");
         assert_eq!(logo_asset(None), "info.png");
@@ -701,7 +701,7 @@ mod tests {
     }
 
     #[test]
-    fn w_control_characters_are_stripped_so_loadxml_never_rejects_the_toast() {
+    fn feat_win_control_characters_are_stripped_so_loadxml_never_rejects_the_toast() {
         let t = build("{\"v\":1,\"id\":\"x\",\"title\":{\"nl\":\"a\\u0000b\\u0007c\\nd\"}}");
         assert!(t.xml.contains("abc\nd"));
     }
@@ -718,7 +718,7 @@ mod tests {
     }
 
     #[test]
-    fn w2_up_to_five_buttons_then_truncate_and_report() {
+    fn feat_win_2_up_to_five_buttons_then_truncate_and_report() {
         let actions: Vec<String> = (0..7)
             .map(|i| format!(r#"{{"id":"b{i}","label":{{"nl":"B{i}"}}}}"#))
             .collect();
@@ -732,7 +732,7 @@ mod tests {
     }
 
     #[test]
-    fn w3_styled_buttons_switch_on_use_button_style() {
+    fn feat_win_3_styled_buttons_switch_on_use_button_style() {
         let t = build(
             r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[
                 {"id":"yes","label":{"nl":"Ja"},"style":"success"},
@@ -748,7 +748,7 @@ mod tests {
     }
 
     #[test]
-    fn w4_a_url_button_opens_the_link_and_only_web_links_qualify() {
+    fn feat_win_4_a_url_button_opens_the_link_and_only_web_links_qualify() {
         let t = build(
             r#"{"v":1,"id":"x","title":{"nl":"a"},"actions":[
                 {"id":"cam","label":{"nl":"Camera"},"url":"http://ha.local:8123/cam"},
@@ -767,7 +767,7 @@ mod tests {
     }
 
     #[test]
-    fn w5_click_url_becomes_a_protocol_launch() {
+    fn feat_win_5_click_url_becomes_a_protocol_launch() {
         let t = build(r#"{"v":1,"id":"x","title":{"nl":"a"},"click_url":"http://ha.local/"}"#);
         assert!(
             t.xml
@@ -778,7 +778,7 @@ mod tests {
     }
 
     #[test]
-    fn w6_images_come_from_the_shell_resolved_uris() {
+    fn feat_win_6_images_come_from_the_shell_resolved_uris() {
         let mut i = input();
         i.logo_uri = Some("file:///C:/nf/assets/info.png");
         i.hero_uri = Some("file:///C:/nf/images/hub-1.jpg");
@@ -793,7 +793,7 @@ mod tests {
     }
 
     #[test]
-    fn w7_tags_pass_through_and_long_tags_are_clamped_without_collisions() {
+    fn feat_win_7_tags_pass_through_and_long_tags_are_clamped_without_collisions() {
         let t = build(r#"{"v":1,"id":"x","title":{"nl":"a"},"tag":"wasmachine"}"#);
         assert_eq!(t.tag.as_deref(), Some("wasmachine"));
         let a = clamp_tag(&"x".repeat(100));
@@ -805,7 +805,7 @@ mod tests {
     }
 
     #[test]
-    fn w8_progress_values_are_clamped_and_bad_ones_read_indeterminate() {
+    fn feat_win_8_progress_values_are_clamped_and_bad_ones_read_indeterminate() {
         let t = build(
             r#"{"v":1,"id":"x","title":{"nl":"a"},"progress":{"value":1.7,"status":{"nl":"Wassen"},"label":"3/5"}}"#,
         );
@@ -821,7 +821,7 @@ mod tests {
     }
 
     #[test]
-    fn w8_tag_plus_progress_is_a_data_bound_live_toast() {
+    fn feat_win_8_tag_plus_progress_is_a_data_bound_live_toast() {
         let t = build(
             r#"{"v":1,"id":"x","tag":"wasmachine","title":{"nl":"Wasmachine"},
                 "progress":{"value":0.25,"status":{"nl":"Wassen"}}}"#,
@@ -850,7 +850,7 @@ mod tests {
     }
 
     #[test]
-    fn w9_text_and_selection_inputs_render_in_the_actions_block() {
+    fn feat_win_9_text_and_selection_inputs_render_in_the_actions_block() {
         let t = build(
             r#"{"v":1,"id":"x","title":{"nl":"a"},"inputs":[
                 {"id":"reply","placeholder":{"nl":"Antwoord…"}},
@@ -874,7 +874,7 @@ mod tests {
     }
 
     #[test]
-    fn w10_source_becomes_header_and_attribution() {
+    fn feat_win_10_source_becomes_header_and_attribution() {
         let t = build(r#"{"v":1,"id":"x","source":"home-assistant","title":{"nl":"a"}}"#);
         assert!(t.xml.contains(
             r#"<header id="home-assistant" title="home-assistant" arguments="k=header"/>"#
@@ -888,7 +888,7 @@ mod tests {
     }
 
     #[test]
-    fn w11_the_timestamp_is_the_publish_time() {
+    fn feat_win_11_the_timestamp_is_the_publish_time() {
         assert_eq!(rfc3339_utc(0), "1970-01-01T00:00:00Z");
         assert_eq!(rfc3339_utc(1_756_400_000), "2025-08-28T16:53:20Z");
         assert_eq!(rfc3339_utc(951_782_400), "2000-02-29T00:00:00Z");
@@ -912,7 +912,7 @@ mod tests {
     }
 
     #[test]
-    fn w12_ephemeral_and_config_lifetimes_become_the_expiration_time() {
+    fn feat_win_12_ephemeral_and_config_lifetimes_become_the_expiration_time() {
         let published = input().published_at_ms;
         let mut i = input();
         let plain = build_toast(&env(r#"{"v":1,"id":"x","title":{"nl":"a"}}"#), &i);
@@ -953,7 +953,7 @@ mod tests {
     }
 
     #[test]
-    fn w_activation_args_round_trip_including_awkward_ids() {
+    fn feat_win_activation_args_round_trip_including_awkward_ids() {
         let a = Activation::Button {
             action_id: "ik pak&het=op".into(),
             envelope_id: "01J/é".into(),

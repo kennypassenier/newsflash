@@ -389,7 +389,7 @@ mod tests {
     }
 
     #[test]
-    fn w_windows_extensions_parse_when_well_formed() {
+    fn feat_win_windows_extensions_parse_when_well_formed() {
         let env = parse_envelope(
             br#"{"v":1,"id":"x","title":{"nl":"a"},"click_url":"http://ha.local/",
                 "image":"http://ha.local/cam.jpg","tag":"wasmachine",
@@ -406,7 +406,7 @@ mod tests {
     }
 
     #[test]
-    fn w_a_wrong_typed_extension_is_dropped_never_poison() {
+    fn feat_win_a_wrong_typed_extension_is_dropped_never_poison() {
         let env = parse_envelope(
             br#"{"v":1,"id":"x","title":{"nl":"a"},"click_url":42,"progress":"half",
                 "inputs":{"not":"a list"},"tag":["x"],"actions":[{"id":"ok","style":7}],
