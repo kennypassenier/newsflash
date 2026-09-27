@@ -55,7 +55,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn w1_critical_scenario_defaults_to_reminder() {
+    fn feat_win_1_critical_scenario_defaults_to_reminder() {
         let c = parse(r#"hub_url = "http://x""#).unwrap();
         assert_eq!(c.critical_scenario, CriticalScenario::Reminder);
         let c = parse(r#"critical_scenario = "urgent""#).unwrap();

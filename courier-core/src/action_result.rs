@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn w9_input_values_ride_along_under_data_inputs() {
+    fn feat_win_9_input_values_ride_along_under_data_inputs() {
         let inputs = vec![
             ("reply".to_string(), "on my way".to_string()),
             ("snooze_minutes".to_string(), "60".to_string()),
