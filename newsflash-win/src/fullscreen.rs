@@ -2,10 +2,12 @@
 //! toasts go to Notification Center silently, and pop up once it is gone
 //! (Kenny, 2026-09-28, after a toast crossed Oblivion Remastered).
 //!
-//! Detection is the shell's own answer to "may I notify the user now?"
-//! (`SHQueryUserNotificationState`), the same signal Windows' automatic
-//! "when playing a game" rule is built on — but that rule only covers
-//! exclusive fullscreen, and a borderless-windowed game reports `BUSY`.
+//! Detection, measured 2026-09-28 on Kenny's pc: the shell's `BUSY`
+//! state stayed on with Oblivion Remastered running behind a Windows
+//! Terminal in front, so it cannot tell "playing" from "alt-tabbed out".
+//! What counts instead is the window in front: it covers its whole
+//! monitor (a borderless or exclusive fullscreen game), or the shell
+//! reports exclusive D3D fullscreen or presentation mode.
 
 use crate::toast::{notifier, show_built};
 use courier_core::wintoast::WinToast;
@@ -14,24 +16,61 @@ use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use windows::Win32::Foundation::RECT;
+use windows::Win32::Graphics::Gdi::{
+    GetMonitorInfoW, MONITOR_DEFAULTTONULL, MONITORINFO, MonitorFromWindow,
+};
 use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
 use windows::Win32::UI::Shell::{
-    QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState,
+    QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState,
+};
+use windows::Win32::UI::WindowsAndMessaging::{
+    GetClassNameW, GetForegroundWindow, GetShellWindow, GetWindowRect,
 };
 
 /// How often the waiting thread asks whether the fullscreen app is gone.
 const CHECK_EVERY: Duration = Duration::from_secs(2);
 
 pub fn app_in_front() -> bool {
-    match unsafe { SHQueryUserNotificationState() } {
-        Ok(state) => [
-            QUNS_BUSY,
-            QUNS_RUNNING_D3D_FULL_SCREEN,
-            QUNS_PRESENTATION_MODE,
-        ]
-        .contains(&state),
-        // Unknown means we cannot tell: show normally rather than hide.
-        Err(_) => false,
+    let exclusive = matches!(
+        unsafe { SHQueryUserNotificationState() },
+        Ok(state) if state == QUNS_RUNNING_D3D_FULL_SCREEN || state == QUNS_PRESENTATION_MODE
+    );
+    exclusive || foreground_covers_its_monitor()
+}
+
+/// True when the window in front fills its monitor edge to edge (the
+/// taskbar hidden). A maximized ordinary window stops at the taskbar, so
+/// it does not count; the desktop itself is excluded by class.
+fn foreground_covers_its_monitor() -> bool {
+    unsafe {
+        let window = GetForegroundWindow();
+        if window.is_invalid() || window == GetShellWindow() {
+            return false;
+        }
+        let mut class = [0u16; 64];
+        let len = GetClassNameW(window, &mut class) as usize;
+        let class = String::from_utf16_lossy(&class[..len]);
+        if matches!(class.as_str(), "Progman" | "WorkerW" | "Shell_TrayWnd") {
+            return false;
+        }
+        let mut rect = RECT::default();
+        if GetWindowRect(window, &mut rect).is_err() {
+            return false;
+        }
+        let monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONULL);
+        if monitor.is_invalid() {
+            return false;
+        }
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        if !GetMonitorInfoW(monitor, &mut info).as_bool() {
+            return false;
+        }
+        let m = info.rcMonitor;
+        rect.left <= m.left && rect.top <= m.top && rect.right >= m.right && rect.bottom >= m.bottom
     }
 }
 

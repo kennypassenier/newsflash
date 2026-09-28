@@ -20,7 +20,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
-| Next action | none: every 2026-09-26 form answer is built and installed; only the unnamed flake stays open |
+| Next action | measurement open: feat-10's positive case (a toast arriving while a game is in front stays silent, then pops up on leaving it) is only confirmed at Kenny's next game session; otherwise only the unnamed flake |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -81,9 +81,17 @@ is in `docs/WINDOWS.md`.
   (450e016) rebuilds newsflash when the version moves (0.2.0 since PR #5)
   and then runs `newsflash install`, which copies it to `~/.local/bin`,
   writes the chime, sets `sound_file` and restarts the unit (feat-9).
-  Nothing manual is left on Garuda. Windows runs 0.2.0 since
-  2026-09-27 00:27 local (installed from WSL with `newsflash-win.exe
-  install`; send-test rendered, log line `newsflash 0.2.0 starting`).
+  Nothing manual is left on Garuda. Windows runs 0.2.2 since
+  2026-09-28 13:52 local (installed from WSL with `newsflash-win.exe
+  install`).
+- **feat-10, no popups over a game (Windows, 2026-09-28):** built after
+  a toast crossed Oblivion Remastered. 0.2.1 used the shell's `BUSY`
+  state and was measured wrong within minutes (`newsflash status` said
+  "in front" with Windows Terminal in front and the game behind); 0.2.2
+  checks whether the foreground window covers its monitor, and the same
+  measurement then read `none`. Not yet measured: the positive case
+  in a game. The log lines to look for are "a fullscreen app is in
+  front — shown silently" and "fullscreen app closed — popped up now".
 - **The seven asks are filed** in the vault as `Notification Pipeline V2
   Desktop Cohesion Proposals.md` (2026-09-26); pipeline-v2 decides them
   (ask-4 already decided by Kenny: push implies desktop).
