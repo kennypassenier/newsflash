@@ -409,6 +409,14 @@ fn status() -> i32 {
         })
         .unwrap_or_else(|e| format!("unknown ({e})"));
     println!("notifications        {setting}");
+    println!(
+        "fullscreen app       {}",
+        if crate::fullscreen::app_in_front() {
+            "in front — toasts wait silently (feat-10)"
+        } else {
+            "none"
+        }
+    );
     let token_source = inject_stored_token().unwrap_or("DPAPI store (unreadable!)");
     println!("token source         {token_source}");
     let config_path = paths::config_path();

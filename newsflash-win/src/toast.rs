@@ -7,11 +7,14 @@
 //! through COM (`activator`). So "shown" (ack) and "answered" (publish)
 //! are decoupled here by construction — AR24 without any watcher.
 
+use crate::fullscreen::{self, Held, HeldQueue};
 use crate::{AUMID, images, registry};
 use courier_core::envelope::Envelope;
 use courier_core::hub::HubMessage;
 use courier_core::toast::{Language, Lifetimes, PopupDurations, Presentation, presentation};
-use courier_core::wintoast::{BuildInput, CriticalScenario, WinToast, build_toast, logo_asset};
+use courier_core::wintoast::{
+    BuildInput, CriticalScenario, WinToast, build_toast, held_for_fullscreen, hold_tag, logo_asset,
+};
 use newsflash::config::Config;
 use newsflash::logx;
 use newsflash::run::{AfterAck, Desktop};
@@ -50,6 +53,7 @@ pub struct WinDesktop {
     lifetimes: Lifetimes,
     popup: PopupDurations,
     link_base_url: Option<String>,
+    held: HeldQueue,
 }
 
 impl WinDesktop {
@@ -71,6 +75,11 @@ impl WinDesktop {
             lifetimes: config.lifetimes,
             popup: config.popup,
             link_base_url: config.link_base_url.clone(),
+            held: {
+                let held = HeldQueue::default();
+                held.start(config.sound_file.clone());
+                held
+            },
         }
     }
 }
@@ -149,22 +158,27 @@ impl Desktop for WinDesktop {
         });
         let hero = hero.map(|p| p.display().to_string());
         let logo = existing(&self.assets.join(logo_asset(env.priority.as_deref())));
-        let built = build_toast(
-            env,
-            &BuildInput {
-                hub_id: &message.id,
-                published_at_ms: message.published_at_ms,
-                language: self.language,
-                critical_scenario: self.critical_scenario,
-                logo_uri: logo.as_deref(),
-                hero_uri: hero.as_deref(),
-                silent: self.chime.is_some(),
-                demo: false,
-                lifetimes: self.lifetimes,
-                popup: self.popup,
-                link_base: self.link_base_url.as_deref(),
-            },
-        );
+        let tag = hold_tag(&message.id);
+        let mut input = BuildInput {
+            hub_id: &message.id,
+            published_at_ms: message.published_at_ms,
+            language: self.language,
+            critical_scenario: self.critical_scenario,
+            logo_uri: logo.as_deref(),
+            hero_uri: hero.as_deref(),
+            silent: self.chime.is_some(),
+            demo: false,
+            lifetimes: self.lifetimes,
+            popup: self.popup,
+            hold_popup: fullscreen::app_in_front(),
+            fallback_tag: None,
+            link_base: self.link_base_url.as_deref(),
+        };
+        let held = held_for_fullscreen(env, &input);
+        if held {
+            input.fallback_tag = Some(&tag);
+        }
+        let built = build_toast(env, &input);
         if built.dropped_actions > 0 {
             logx::warn(&format!(
                 "{}: {} action(s) beyond the Windows limit of 5 dropped (AR27)",
@@ -178,6 +192,19 @@ impl Desktop for WinDesktop {
             ));
         }
         show_built(&notifier, &built, &message.id, &mut self.live)?;
+        if held {
+            input.hold_popup = false;
+            self.held.push(Held {
+                toast: build_toast(env, &input),
+                label: message.id.clone(),
+            });
+            logx::info(&format!(
+                "{}: a fullscreen app is in front — shown silently in Notification Center, \
+                 pops up when it closes",
+                message.id
+            ));
+            return Ok(Box::new(|| {}));
+        }
         let chime = if presentation == Presentation::Quiet {
             None
         } else {
@@ -330,7 +357,7 @@ pub fn show_notice(title: &str, body: &str) -> bool {
 
 /// K6 on Windows: the toast itself is silent when a chime is set, and
 /// the WAV plays asynchronously — never a failed message.
-fn play_chime(file: &Path) {
+pub fn play_chime(file: &Path) {
     let ok = unsafe {
         PlaySoundW(
             &HSTRING::from(file.as_os_str()),

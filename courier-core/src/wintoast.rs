@@ -77,6 +77,13 @@ pub struct BuildInput<'a> {
     pub lifetimes: Lifetimes,
     /// Popup durations from the config (feat-7); see `windows_duration`.
     pub popup: PopupDurations,
+    /// feat-10: a fullscreen app (a game) is in front. The toast goes to
+    /// Notification Center silently and gets `fallback_tag`, so the
+    /// shell can pop it up later by showing it again under that tag.
+    /// Ignored for `critical`, which always pops.
+    pub hold_popup: bool,
+    /// Tag for a toast whose message carries none (feat-10's re-pop).
+    pub fallback_tag: Option<&'a str>,
     /// Resolves path-only links (`/control-panel/homelab`); see
     /// `toast::resolve_link`.
     pub link_base: Option<&'a str>,
@@ -153,7 +160,9 @@ pub fn build_toast(env: &Envelope, input: &BuildInput) -> WinToast {
         .as_deref()
         .map(str::trim)
         .filter(|t| !t.is_empty())
+        .or(input.fallback_tag)
         .map(clamp_tag);
+    let held = held_for_fullscreen(env, input);
     let live = tag.is_some() && env.progress.is_some();
     let mut data: Vec<(String, String)> = Vec::new();
     // Live toasts bind every changing text to a key; others inline it.
@@ -264,7 +273,7 @@ pub fn build_toast(env: &Envelope, input: &BuildInput) -> WinToast {
     }
     xml.push_str("</actions>");
 
-    if input.silent || presentation(env) == Presentation::Quiet {
+    if input.silent || presentation(env) == Presentation::Quiet || held {
         xml.push_str(r#"<audio silent="true"/>"#);
     }
     xml.push_str("</toast>");
@@ -276,8 +285,23 @@ pub fn build_toast(env: &Envelope, input: &BuildInput) -> WinToast {
         dropped_actions,
         dropped_inputs,
         expires_at_ms: expires_at_ms(env, input),
-        suppress_popup: presentation(env) == Presentation::Quiet,
+        suppress_popup: presentation(env) == Presentation::Quiet || held,
     }
+}
+
+/// feat-10: does this toast wait for the fullscreen app to go away?
+/// Only one that would otherwise pop up: critical always pops, and a
+/// quiet (deferred) one never pops anyway.
+pub fn held_for_fullscreen(env: &Envelope, input: &BuildInput) -> bool {
+    input.hold_popup
+        && env.priority.as_deref() != Some("critical")
+        && presentation(env) == Presentation::Popup
+}
+
+/// The tag a held toast is shown under, so its later popup replaces the
+/// silent copy in Notification Center instead of adding a second one.
+pub fn hold_tag(hub_id: &str) -> String {
+    format!("held-{hub_id}")
 }
 
 fn resolve_buttons(env: &Envelope, input: &BuildInput) -> (Vec<String>, usize) {
@@ -626,12 +650,43 @@ mod tests {
                 critical: None,
             },
             popup: PopupDurations::default(),
+            hold_popup: false,
+            fallback_tag: None,
             link_base: None,
         }
     }
 
     fn build(json: &str) -> WinToast {
         build_toast(&env(json), &input())
+    }
+
+    #[test]
+    fn feat_10_fullscreen_holds_the_popup_silently_under_a_tag_but_not_critical() {
+        let tag = hold_tag("hub-9");
+        let mut i = input();
+        i.hold_popup = true;
+        i.fallback_tag = Some(&tag);
+        let info = build_toast(&env(r#"{"v":1,"id":"x","title":{"nl":"a"}}"#), &i);
+        assert!(info.suppress_popup);
+        assert!(info.xml.contains(r#"<audio silent="true"/>"#));
+        assert_eq!(info.tag.as_deref(), Some("held-hub-9"));
+        // The later popup: same tag, no suppression, sound back.
+        i.hold_popup = false;
+        let later = build_toast(&env(r#"{"v":1,"id":"x","title":{"nl":"a"}}"#), &i);
+        assert!(!later.suppress_popup && !later.xml.contains("silent"));
+        assert_eq!(later.tag, info.tag);
+        // Critical is never held; a message's own tag wins.
+        i.hold_popup = true;
+        let crit = build_toast(
+            &env(r#"{"v":1,"id":"x","priority":"critical","title":{"nl":"a"}}"#),
+            &i,
+        );
+        assert!(!crit.suppress_popup);
+        let own = build_toast(
+            &env(r#"{"v":1,"id":"x","tag":"wasmachine","title":{"nl":"a"}}"#),
+            &i,
+        );
+        assert_eq!(own.tag.as_deref(), Some("wasmachine"));
     }
 
     #[test]

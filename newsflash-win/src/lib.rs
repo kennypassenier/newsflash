@@ -21,6 +21,8 @@ pub mod app;
 #[cfg(windows)]
 mod demo;
 #[cfg(windows)]
+pub mod fullscreen;
+#[cfg(windows)]
 pub mod installer;
 #[cfg(windows)]
 pub mod instance;

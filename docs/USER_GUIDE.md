@@ -211,6 +211,14 @@ the installer leaves it alone.
 **Proven by:** `feat_9_an_unset_sound_file_gets_the_shipped_chime`,
 `feat_9_a_sound_file_already_chosen_is_left_alone`.
 
+## feat-10 · No popups over a game (Windows)
+
+While a fullscreen app is in front (a game, also in borderless
+fullscreen, or a presentation), a notification goes to Notification
+Center without popup or sound. When you leave the game it pops up, with
+the chime. Critical notifications still pop up at once. `newsflash
+status` shows whether newsflash currently sees a fullscreen app.
+
 ## feat-6 · Links
 
 Clicking the notification itself opens its `click_url`. Links that are

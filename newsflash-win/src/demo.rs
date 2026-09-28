@@ -165,6 +165,8 @@ pub fn run() -> i32 {
                 demo: true,
                 lifetimes: courier_core::toast::Lifetimes::default(),
                 popup: courier_core::toast::PopupDurations::default(),
+                hold_popup: false,
+                fallback_tag: None,
                 link_base: Some("http://10.10.10.2:8123"),
             },
         );

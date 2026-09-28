@@ -556,3 +556,18 @@ Linux uses urgency `low`, which Plasma by default files in the history
 without a popup (Plasma's own setting, so configuration-dependent);
 Windows sets `ToastNotification.SuppressPopup` and silences the toast
 (code-enforced). The chime is skipped for quiet messages on both.
+
+### arch-8 · Fullscreen holds the popup, not the message (2026-09-28)
+A game in front must not get a toast over it (Kenny, 2026-09-28). The
+message is still received, shown and acked as usual, so nothing waits
+at the hub under its 10-minute TTL during a long session and no expiry
+notices follow. The toast is shown silently (`SuppressPopup`) under a
+tag derived from the hub id; a thread checks every 2 s and, once
+`SHQueryUserNotificationState` no longer reports busy, D3D fullscreen
+or presentation mode, shows the same toast again under that tag, which
+replaces the silent copy and pops up. Windows' own "when playing a
+game" rule only covers exclusive fullscreen; a borderless game reports
+busy, which is why newsflash checks itself. `critical` is not held.
+Held popups live in memory: a restart during the game leaves them in
+Notification Center without the later popup. Code-enforced
+(`held_for_fullscreen`, `fullscreen.rs`).
