@@ -20,7 +20,7 @@ gates hold from any session or terminal. After a fresh clone, run:
 | Current phase | **COMPLETE** — phases 0-10 all gated and closed (2026-08-28 → 2026-08-30 as hub-clients/desk-courier) |
 | Last completed gate | Phase 10 retro (2026-08-30): six lessons adopted, diff committed to dev-procedure (2e0f8c0) |
 | Next gate | none open — mini-round windows-port ratified 2026-09-26 (form answers recorded in `docs/WINDOWS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE_DECISIONS.md`) |
-| Next action | measurement open: feat-10's positive case (a toast arriving while a game is in front stays silent, then pops up on leaving it) is only confirmed at Kenny's next game session; otherwise only the unnamed flake |
+| Next action | none; only the unnamed flake stays open |
 | AFK mode | off since 2026-08-29 |
 
 Deployed and running: unit enabled, token via latch (`KYU_TOKEN`,
@@ -89,9 +89,14 @@ is in `docs/WINDOWS.md`.
   state and was measured wrong within minutes (`newsflash status` said
   "in front" with Windows Terminal in front and the game behind); 0.2.2
   checks whether the foreground window covers its monitor, and the same
-  measurement then read `none`. Not yet measured: the positive case
-  in a game. The log lines to look for are "a fullscreen app is in
-  front — shown silently" and "fullscreen app closed — popped up now".
+  measurement then read `none`. Positive case measured in the Windows
+  log on 2026-09-28: 01M3KZ4Z… held at 12:17:04Z and popped up at
+  12:37:04Z, 01M3M345… held at 13:26:31Z and popped up at 13:27:07Z.
+- **Clicking a toast opens a page (asked 2026-09-29):** already built as
+  feat-win-5 / feat-6 (`click_url`, paths via `link_base_url`). It works
+  only when the sender sets `click_url`; homelab's notifications set
+  none (`git grep click_url` in ~/Projects/homelab: no hits), which is
+  the homelab dashboard thread's change.
 - **The seven asks are filed** in the vault as `Notification Pipeline V2
   Desktop Cohesion Proposals.md` (2026-09-26); pipeline-v2 decides them
   (ask-4 already decided by Kenny: push implies desktop).
