@@ -65,17 +65,14 @@ git config core.hooksPath .githooks
 
 Without it, commits skip the gates (fmt, clippy warnings-as-errors,
 full test suite, core I/O boundary, tree-change check) and the
-commit-message ID rule. CI re-runs the same gates on every push.
-
-Branch protection on `main` requires the `gates` check, up to date,
-with no bypass (admins included) — so a direct push of an unverified
-commit is refused. The daily flow: push your commit to a side branch
-first (`git push origin main:ci-verify`), wait for green, then push
-`main` — the same commit now carries a green check and is accepted.
+commit-message ID rule. Nothing runs on GitHub Actions since 2026-09-29
+(every build and check runs locally): `scripts/check.sh` runs the gates in
+full plus the Windows shell's clippy, its tests on real Windows (through
+WSL interop) and its release build into `dist/windows/`.
 
 ## Development
 
-- `cargo test --all` — unit + mock-hub tests (CI-safe).
+- `cargo test --all` — unit + mock-hub tests (no network needed).
 - `./scripts/drill.sh` — the `#[ignore]` live tests against a real
   local kyu binary (`KYU_BIN` to override the path). Drills run
   against scratch hubs only; the live hub is never touched.
