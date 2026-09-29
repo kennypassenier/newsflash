@@ -16,8 +16,12 @@ set -euo pipefail
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
+# One full test run per release (Kenny, 2026-09-29): the commit gate stamps
+# the tree it saw green (workstation/bin/gate-stamp); on exactly that tree
+# the same checks are not run again.
+gate_fresh() { [ -x "$HOME/Projects/workstation/bin/gate-stamp" ] && "$HOME/Projects/workstation/bin/gate-stamp" fresh; }
 echo "[1/3] gates"
-GATE_FULL=1 .claude/hooks/gates.sh
+if gate_fresh; then echo "  already green on this tree at commit (gate-stamp)"; else GATE_FULL=1 .claude/hooks/gates.sh; fi
 
 xwin() {
   docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e XWIN_CACHE_DIR=/src/target-windows/xwin \
