@@ -246,10 +246,10 @@ pub fn handle_click(click: &Click, client: Option<&HubClient>, echo: bool) {
                     .iter()
                     .find(|(k, _)| k == "snooze_minutes")
                     .and_then(|(_, v)| v.trim().parse().ok());
-                match newsflash::snooze::snooze(&hub_id, minutes, newsflash::run::now_ms()) {
-                    Some(m) => say(format!("{hub_id}: snoozed, shows again in {m} min")),
+                match client {
+                    Some(c) => newsflash::snooze::snooze_click(c, &hub_id, minutes),
                     None => logx::warn(&format!(
-                        "{hub_id}: snooze clicked, but the message is no longer known"
+                        "{hub_id}: no usable config/token — the snooze could not be published"
                     )),
                 }
             }

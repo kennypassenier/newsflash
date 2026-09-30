@@ -31,6 +31,8 @@ pub struct Config {
     pub interactive_wait_margin_ms: u32,
     /// How long Snooze hides a notification before it shows again (feat-11).
     pub snooze_minutes: u32,
+    /// Where snoozed notifications wait (feat-11); default `<topic>.snooze`.
+    pub snooze_topic: String,
     /// How long notifications may exist (ephemeral + per priority).
     pub lifetimes: Lifetimes,
     /// How long info and warning popups stay on screen (feat-7).
@@ -59,6 +61,7 @@ struct RawConfig {
     ttl_minutes: Option<u64>,
     interactive_wait_margin_ms: Option<u32>,
     snooze_minutes: Option<u32>,
+    snooze_topic: Option<String>,
     sound_file: Option<String>,
     token: Option<String>,
     token_file: Option<String>,
@@ -168,6 +171,18 @@ pub fn load(path: &Path) -> Result<Config, String> {
             ));
         }
     };
+    let snooze_topic = raw
+        .snooze_topic
+        .filter(|t| !t.trim().is_empty())
+        .unwrap_or_else(|| crate::snooze::default_topic(&topic));
+    if snooze_topic == topic {
+        return Err(format!(
+            "snooze_topic {snooze_topic:?} is the subscribed topic itself. A snoozed \
+             notification would reach every subscriber of it again (the phone, the lights); \
+             remove the key for the default ({}).",
+            crate::snooze::default_topic(&topic)
+        ));
+    }
     let interactive_wait_margin_ms = raw
         .interactive_wait_margin_ms
         .unwrap_or(DEFAULT_INTERACTIVE_WAIT_MARGIN_MS);
@@ -232,6 +247,7 @@ pub fn load(path: &Path) -> Result<Config, String> {
         token,
         interactive_wait_margin_ms,
         snooze_minutes,
+        snooze_topic,
         lifetimes,
         popup,
         link_base_url,

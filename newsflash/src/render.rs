@@ -158,14 +158,7 @@ impl Desktop for LinuxDesktop {
                 }
                 logx::info(&format!("{hub_id}: action {action_id:?} chosen"));
                 if action_id == crate::snooze::SNOOZE_ACTION {
-                    match crate::snooze::snooze(&hub_id, None, crate::run::now_ms()) {
-                        Some(m) => {
-                            logx::info(&format!("{hub_id}: snoozed, shows again in {m} min"))
-                        }
-                        None => logx::warn(&format!(
-                            "{hub_id}: snooze clicked, but the message is no longer known"
-                        )),
-                    }
+                    crate::snooze::snooze_click(&watcher_client, &hub_id, None);
                 }
                 publish_action_result(
                     &watcher_client,

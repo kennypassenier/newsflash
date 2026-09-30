@@ -1,16 +1,18 @@
-//! feat-11: the Snooze button shows the notification again later
-//! (Kenny, 2026-09-30: "15 minuten"). Until then a click on Snooze only
-//! reached `notify.actions`, which nothing reads.
+//! feat-11: Snooze puts the notification back on the hub at once, due
+//! `snooze_minutes` later (Kenny, 2026-09-30: "direct op de queue zetten,
+//! maar dat het pas binnen 15 minuten triggert"). Until then a click on
+//! Snooze only reached `notify.actions`, which nothing reads.
 //!
-//! Local on purpose: the hub copy was acked when it was shown, and
-//! re-publishing it would ring the phone and the lights a second time.
-//! The courier keeps the last shown messages in memory; a snooze moves
-//! one to the due list, and the loop shows it again once it is due.
-//! In memory only: a restart forgets pending snoozes (the notification
-//! stays in the history).
+//! It goes to its own topic (`snooze_topic`, default `<topic>.snooze`),
+//! not back to `notify.kenny`: Home Assistant's `ha` subscription reads
+//! that one too and would ring the phone and the lights a second time.
+//! Only newsflash's `desktop` subscription reads the snooze topic, so a
+//! snooze made on Windows arrives on Garuda after a reboot, and survives
+//! a restart of the hub (kyu keeps the due time in its store, W4).
+//! The snooze topic has no TTL: kyu counts a TTL from the publish time,
+//! so a 10-minute TTL would expire a 15-minute snooze before it is due.
 
-use courier_core::envelope::Envelope;
-use courier_core::hub::HubMessage;
+use courier_core::hub::{HubMessage, HubPayload};
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
@@ -25,89 +27,134 @@ const RECENT: usize = 64;
 
 struct Book {
     minutes: u32,
-    recent: VecDeque<(HubMessage, Envelope)>,
-    due: Vec<(u64, HubMessage, Envelope)>,
+    topic: String,
+    recent: VecDeque<HubMessage>,
 }
 
 static BOOK: Mutex<Book> = Mutex::new(Book {
     minutes: DEFAULT_SNOOZE_MINUTES,
+    topic: String::new(),
     recent: VecDeque::new(),
-    due: Vec::new(),
 });
 
-pub fn set_minutes(minutes: u32) {
+/// What a Snooze click publishes, and where.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Plan {
+    pub topic: String,
+    pub body: String,
+    pub minutes: u32,
+}
+
+impl Plan {
+    pub fn delay_ms(&self) -> u64 {
+        u64::from(self.minutes) * 60_000
+    }
+}
+
+pub fn default_topic(topic: &str) -> String {
+    format!("{topic}.snooze")
+}
+
+pub fn configure(minutes: u32, topic: &str) {
     if let Ok(mut b) = BOOK.lock() {
         b.minutes = minutes;
+        b.topic = topic.to_string();
     }
 }
 
 /// Called for every shown message, so a later Snooze click can find it.
-pub fn remember(message: &HubMessage, env: &Envelope) {
+pub fn remember(message: &HubMessage) {
     if let Ok(mut b) = BOOK.lock() {
-        b.recent.retain(|(m, _)| m.id != message.id);
+        b.recent.retain(|m| m.id != message.id);
         if b.recent.len() == RECENT {
             b.recent.pop_front();
         }
-        b.recent.push_back((message.clone(), env.clone()));
+        b.recent.push_back(message.clone());
     }
 }
 
-/// A Snooze click on the toast of `hub_id`. `minutes` overrides the
-/// config (a `snooze_minutes` input on the toast). Returns the minutes
-/// used, or `None` when the message is no longer known.
-pub fn snooze(hub_id: &str, minutes: Option<u32>, now_ms: u64) -> Option<u32> {
-    let mut b = BOOK.lock().ok()?;
+/// What a Snooze click on the toast of `hub_id` publishes: the original
+/// envelope and the delay. `minutes` overrides the config (a
+/// `snooze_minutes` input on the toast). `None` when the message is no
+/// longer known (shown before a restart).
+pub fn plan(hub_id: &str, minutes: Option<u32>) -> Option<Plan> {
+    let b = BOOK.lock().ok()?;
     let minutes = minutes
         .filter(|m| (1..=MAX_SNOOZE_MINUTES).contains(m))
         .unwrap_or(b.minutes);
-    let (message, env) = b.recent.iter().find(|(m, _)| m.id == hub_id)?.clone();
-    b.due.retain(|(_, m, _)| m.id != hub_id);
-    b.due
-        .push((now_ms + u64::from(minutes) * 60_000, message, env));
-    Some(minutes)
+    let message = b.recent.iter().find(|m| m.id == hub_id)?;
+    let HubPayload::Json(value) = &message.payload else {
+        return None;
+    };
+    Some(Plan {
+        topic: b.topic.clone(),
+        body: value.to_string(),
+        minutes,
+    })
 }
 
-/// Everything whose snooze has run out, removed from the due list.
-pub fn take_due(now_ms: u64) -> Vec<(HubMessage, Envelope)> {
-    let Ok(mut b) = BOOK.lock() else {
-        return Vec::new();
+/// A Snooze click: publish the original envelope to the snooze topic,
+/// due later. Logged either way; a failure leaves the notification in
+/// the history, where it already is.
+pub fn snooze_click(client: &crate::hub_client::HubClient, hub_id: &str, minutes: Option<u32>) {
+    let Some(plan) = plan(hub_id, minutes) else {
+        crate::logx::warn(&format!(
+            "{hub_id}: snooze clicked, but this courier did not show that message (shown \
+             before a restart?) — it stays in the notification history"
+        ));
+        return;
     };
-    let (due, later): (Vec<_>, Vec<_>) = b.due.drain(..).partition(|(at, _, _)| *at <= now_ms);
-    b.due = later;
-    due.into_iter().map(|(_, m, e)| (m, e)).collect()
+    match client.publish_delayed(&plan.topic, &plan.body, plan.delay_ms()) {
+        Ok(id) => crate::logx::info(&format!(
+            "{hub_id}: snoozed — back on the hub as {id} on {}, due in {} min",
+            plan.topic, plan.minutes
+        )),
+        Err(e) => crate::logx::warn(&format!(
+            "{hub_id}: snooze could not reach the hub ({}) — it stays in the notification history",
+            e.detail
+        )),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use courier_core::envelope::parse_envelope;
 
     #[test]
-    fn feat_11_a_snoozed_message_comes_back_after_its_minutes_and_only_then() {
+    fn feat_11_a_snooze_republishes_the_original_envelope_with_its_minutes() {
+        let payload = serde_json::json!({"v":1,"id":"p","title":{"nl":"a"}});
         let msg = HubMessage {
             id: "hub-snooze-1".into(),
             attempt: 1,
             published_at_ms: 0,
-            payload: courier_core::hub::HubPayload::Binary,
+            payload: HubPayload::Json(payload.clone()),
         };
-        let env = parse_envelope(br#"{"v":1,"id":"p","title":{"nl":"a"}}"#).unwrap();
-        set_minutes(15);
+        configure(15, "notify.kenny.snooze");
         assert_eq!(
-            snooze("hub-snooze-1", None, 0),
+            plan("hub-snooze-1", None),
             None,
             "unknown before it was shown"
         );
-        remember(&msg, &env);
-        assert_eq!(snooze("hub-snooze-1", None, 1_000), Some(15));
-        assert!(take_due(1_000 + 14 * 60_000).is_empty());
-        let due = take_due(1_000 + 15 * 60_000);
-        assert_eq!(due.len(), 1);
-        assert_eq!(due[0].0.id, "hub-snooze-1");
-        assert!(take_due(u64::MAX).is_empty(), "shown once, not again");
+        remember(&msg);
+        let p = plan("hub-snooze-1", None).unwrap();
         assert_eq!(
-            snooze("hub-snooze-1", Some(5), 0),
-            Some(5),
+            (p.topic.as_str(), p.minutes, p.delay_ms()),
+            ("notify.kenny.snooze", 15, 900_000)
+        );
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&p.body).unwrap(),
+            payload
+        );
+        assert_eq!(
+            plan("hub-snooze-1", Some(5)).unwrap().minutes,
+            5,
             "toast input wins"
         );
+        assert_eq!(
+            plan("hub-snooze-1", Some(0)).unwrap().minutes,
+            15,
+            "out of range: config"
+        );
+        assert_eq!(default_topic("notify.kenny"), "notify.kenny.snooze");
     }
 }

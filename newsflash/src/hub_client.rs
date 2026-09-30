@@ -71,12 +71,22 @@ impl HubClient {
         &self,
         from_beginning: bool,
     ) -> Result<Option<(HubMessage, Option<String>)>, HubCallError> {
+        self.receive_waiting(from_beginning, POLL_WAIT_SECS)
+    }
+
+    /// One poll that waits at most `wait_secs` (0 = answer at once; the
+    /// snooze topic is checked that way between long polls, feat-11).
+    pub fn receive_waiting(
+        &self,
+        from_beginning: bool,
+        wait_secs: u64,
+    ) -> Result<Option<(HubMessage, Option<String>)>, HubCallError> {
         let url = format!(
             "{}/t/{}/next?as={}&envelope=json&wait={}{}",
             self.base,
             self.topic,
             self.subscription,
-            POLL_WAIT_SECS,
+            wait_secs,
             if from_beginning {
                 "&from=beginning"
             } else {
@@ -208,7 +218,32 @@ impl HubClient {
     /// goes to `notify.actions` (courier_core::action_result::ACTIONS_TOPIC),
     /// never to the subscribed `notify.kenny`.
     pub fn publish_to(&self, topic: &str, envelope_json: &str) -> Result<String, HubCallError> {
-        let url = format!("{}/t/{}", self.base, topic);
+        self.publish_url(&format!("{}/t/{}", self.base, topic), envelope_json)
+    }
+
+    /// feat-11: publish now, deliverable `delay_ms` later (kyu W4 `?delay=`).
+    pub fn publish_delayed(
+        &self,
+        topic: &str,
+        envelope_json: &str,
+        delay_ms: u64,
+    ) -> Result<String, HubCallError> {
+        self.publish_url(
+            &format!("{}/t/{}?delay={delay_ms}", self.base, topic),
+            envelope_json,
+        )
+    }
+
+    /// The same client for another topic of the same subscription name.
+    pub fn for_topic(&self, topic: &str) -> Self {
+        HubClient {
+            topic: topic.to_string(),
+            ..self.clone()
+        }
+    }
+
+    fn publish_url(&self, url: &str, envelope_json: &str) -> Result<String, HubCallError> {
+        let url = url.to_string();
         let response = self
             .ops
             .post(&url)

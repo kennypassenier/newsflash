@@ -94,8 +94,12 @@ is in `docs/WINDOWS.md`.
   12:37:04Z, 01M3M345… held at 13:26:31Z and popped up at 13:27:07Z.
 - **feat-11, Snooze shows the notification again (2026-09-30):** until
   then Snooze only published to `notify.actions`, which nothing reads.
-  Now the courier shows it again after `snooze_minutes` (15). Local, in
-  memory, both OSes.
+  Now a Snooze click publishes the original envelope to
+  `notify.kenny.snooze` with kyu's `?delay=` (W4), due after
+  `snooze_minutes` (15); the courier reads that topic between long polls
+  without a TTL check (kyu counts a TTL from the publish time). Built,
+  lint-clean on both OSes; tests and the Windows install wait for
+  Kenny's release go (0.2.3).
 - **Clicking a toast opens a page (asked 2026-09-29):** already built as
   feat-win-5 / feat-6 (`click_url`, paths via `link_base_url`). It works
   only when the sender sets `click_url`; homelab's notifications set

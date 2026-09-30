@@ -221,10 +221,12 @@ status` shows whether newsflash currently sees a fullscreen app.
 
 ## feat-11 · Snooze
 
-Snooze hides a notification and shows it again after 15 minutes
-(`snooze_minutes` in `config.toml`, 1 to 1440). You can snooze it
-again. A restart of newsflash forgets pending snoozes; the notification
-then stays in the history.
+Snooze puts the notification straight back on the hub, due 15 minutes
+later (`snooze_minutes` in `config.toml`, 1 to 1440). It waits on its
+own topic, `notify.kenny.snooze`, which only newsflash reads, so your
+phone and the lights do not go off a second time. Because the hub keeps
+it, a snooze survives a restart and even a reboot into the other OS.
+You can snooze it again when it comes back.
 
 ## feat-6 · Links
 

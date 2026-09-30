@@ -105,7 +105,9 @@ pub fn run_with(
     let client = HubClient::new(config);
     let seen_path = seen_path.to_path_buf();
     let mut seen = state::load(&seen_path);
-    crate::snooze::set_minutes(config.snooze_minutes);
+    crate::snooze::configure(config.snooze_minutes, &config.snooze_topic);
+    let snooze_client = client.for_topic(&config.snooze_topic);
+    let mut snooze_from_beginning = true; // creates the subscription on the snooze topic
 
     let mut attempt: u32 = 0; // consecutive failed cycles (AR9)
     let mut connected = false; // for the recovered transition
@@ -116,8 +118,15 @@ pub fn run_with(
     let mut last_state = String::new(); // log only state CHANGES (AR9)
 
     while !term.load(Ordering::Relaxed) {
-        if daemon_ok {
-            show_snoozed(config, desktop);
+        if daemon_ok && connected {
+            poll_snoozed(
+                config,
+                &snooze_client,
+                desktop,
+                &mut seen,
+                &seen_path,
+                &mut snooze_from_beginning,
+            );
         }
         // AR22: hold while the notification daemon is absent — messages
         // wait at the hub under the TTL, which is the designed behaviour.
@@ -178,7 +187,9 @@ pub fn run_with(
                 if let Some(notice) = notice {
                     logx::info(&format!("hub notice: {notice}"));
                 }
-                if handle_message(config, &client, desktop, &mut seen, &seen_path, &message) {
+                if handle_message(
+                    config, &client, desktop, &mut seen, &seen_path, &message, true,
+                ) {
                     // AR22: a render failure may mean the daemon left the
                     // bus (logout race, crash) — re-probe before consuming
                     // more; if it is present the probe passes at once.
@@ -245,30 +256,32 @@ pub fn run_with(
     0
 }
 
-/// feat-11: show again what was snoozed and is now due. Already acked,
-/// so this never settles; a message whose lifetime ended meanwhile is
-/// dropped instead of reappearing for a moment.
-fn show_snoozed(config: &Config, desktop: &mut dyn Desktop) {
-    for (message, env) in crate::snooze::take_due(now_ms()) {
-        let ended = courier_core::toast::lifetime_minutes(&env, &config.lifetimes)
-            .is_some_and(|m| message.published_at_ms + u64::from(m) * 60_000 <= now_ms());
-        if ended {
-            logx::info(&format!(
-                "{}: snooze over, but its lifetime ended meanwhile — not shown again",
-                message.id
-            ));
-            continue;
-        }
-        match desktop.show(&message, &env) {
-            Ok(after) => {
-                logx::info(&format!("{}: snooze over — shown again", message.id));
-                crate::snooze::remember(&message, &env);
-                after();
+/// feat-11: what Snooze put back on the hub arrives on its own topic,
+/// checked without waiting between the long polls. No TTL check: a
+/// snoozed message is older than the TTL by design.
+fn poll_snoozed(
+    config: &Config,
+    client: &HubClient,
+    desktop: &mut dyn Desktop,
+    seen: &mut courier_core::dedup::SeenSet,
+    seen_path: &PathBuf,
+    from_beginning: &mut bool,
+) {
+    for _ in 0..10 {
+        match client.receive_waiting(*from_beginning, 0) {
+            Ok(None) => {
+                *from_beginning = false;
+                return;
             }
-            Err(e) => logx::warn(&format!(
-                "{}: snooze over, but showing it again failed ({e})",
-                message.id
-            )),
+            Ok(Some((message, _))) => {
+                *from_beginning = false;
+                logx::info(&format!("{}: snooze over — showing it again", message.id));
+                if handle_message(config, client, desktop, seen, seen_path, &message, false) {
+                    return;
+                }
+            }
+            // The topic exists only after the first snooze: nothing to do.
+            Err(_) => return,
         }
     }
 }
@@ -281,9 +294,10 @@ fn handle_message(
     seen: &mut courier_core::dedup::SeenSet,
     seen_path: &PathBuf,
     message: &HubMessage,
+    check_ttl: bool,
 ) -> bool {
     let parsed = parse_from_hub(&message.payload);
-    let stale = is_stale(message.published_at_ms, config.ttl_ms, now_ms());
+    let stale = check_ttl && is_stale(message.published_at_ms, config.ttl_ms, now_ms());
     match pre_render(&parsed, &message.id, seen, stale) {
         PreRender::Render => {
             let env = parsed.as_ref().expect("Render implies parsed");
@@ -313,7 +327,7 @@ fn handle_message(
                         "rendered {} (payload id {}, attempt {})",
                         message.id, env.id, message.attempt
                     ));
-                    crate::snooze::remember(message, env);
+                    crate::snooze::remember(message);
                     after_ack();
                     false
                 }

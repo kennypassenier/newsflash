@@ -86,6 +86,7 @@ fn probe_client(hub_url: &str, token: &str) -> HubClient {
         token: token.to_string(),
         interactive_wait_margin_ms: DEFAULT_INTERACTIVE_WAIT_MARGIN_MS,
         snooze_minutes: crate::snooze::DEFAULT_SNOOZE_MINUTES,
+        snooze_topic: crate::snooze::default_topic("notify.kenny"),
         lifetimes: Default::default(),
         popup: Default::default(),
         link_base_url: None,
