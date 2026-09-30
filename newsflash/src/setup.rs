@@ -85,6 +85,7 @@ fn probe_client(hub_url: &str, token: &str) -> HubClient {
         sound_file: None,
         token: token.to_string(),
         interactive_wait_margin_ms: DEFAULT_INTERACTIVE_WAIT_MARGIN_MS,
+        snooze_minutes: crate::snooze::DEFAULT_SNOOZE_MINUTES,
         lifetimes: Default::default(),
         popup: Default::default(),
         link_base_url: None,

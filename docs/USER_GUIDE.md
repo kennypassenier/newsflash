@@ -219,6 +219,13 @@ Center without popup or sound. When you leave the game it pops up, with
 the chime. Critical notifications still pop up at once. `newsflash
 status` shows whether newsflash currently sees a fullscreen app.
 
+## feat-11 · Snooze
+
+Snooze hides a notification and shows it again after 15 minutes
+(`snooze_minutes` in `config.toml`, 1 to 1440). You can snooze it
+again. A restart of newsflash forgets pending snoozes; the notification
+then stays in the history.
+
 ## feat-6 · Links
 
 Clicking the notification itself opens its `click_url`. Links that are

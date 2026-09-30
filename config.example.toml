@@ -55,3 +55,7 @@ hub_url = "http://127.0.0.1:8080"
 # "/control-panel/homelab" → Home Assistant). Omit = such links are
 # not offered; full http(s) links always work.
 #link_base_url = "http://10.10.10.2:8123"
+
+# How long Snooze hides a notification before it shows again (minutes,
+# 1 to 1440).
+#snooze_minutes = 15

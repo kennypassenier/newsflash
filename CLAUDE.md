@@ -92,6 +92,10 @@ is in `docs/WINDOWS.md`.
   measurement then read `none`. Positive case measured in the Windows
   log on 2026-09-28: 01M3KZ4Z… held at 12:17:04Z and popped up at
   12:37:04Z, 01M3M345… held at 13:26:31Z and popped up at 13:27:07Z.
+- **feat-11, Snooze shows the notification again (2026-09-30):** until
+  then Snooze only published to `notify.actions`, which nothing reads.
+  Now the courier shows it again after `snooze_minutes` (15). Local, in
+  memory, both OSes.
 - **Clicking a toast opens a page (asked 2026-09-29):** already built as
   feat-win-5 / feat-6 (`click_url`, paths via `link_base_url`). It works
   only when the sender sets `click_url`; homelab's notifications set

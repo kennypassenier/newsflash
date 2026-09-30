@@ -11,4 +11,5 @@ pub mod render;
 pub mod run;
 pub mod send_test;
 pub mod setup;
+pub mod snooze;
 pub mod state;

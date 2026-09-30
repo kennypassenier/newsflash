@@ -105,6 +105,7 @@ pub fn run_with(
     let client = HubClient::new(config);
     let seen_path = seen_path.to_path_buf();
     let mut seen = state::load(&seen_path);
+    crate::snooze::set_minutes(config.snooze_minutes);
 
     let mut attempt: u32 = 0; // consecutive failed cycles (AR9)
     let mut connected = false; // for the recovered transition
@@ -115,6 +116,9 @@ pub fn run_with(
     let mut last_state = String::new(); // log only state CHANGES (AR9)
 
     while !term.load(Ordering::Relaxed) {
+        if daemon_ok {
+            show_snoozed(config, desktop);
+        }
         // AR22: hold while the notification daemon is absent — messages
         // wait at the hub under the TTL, which is the designed behaviour.
         if !daemon_ok {
@@ -241,6 +245,34 @@ pub fn run_with(
     0
 }
 
+/// feat-11: show again what was snoozed and is now due. Already acked,
+/// so this never settles; a message whose lifetime ended meanwhile is
+/// dropped instead of reappearing for a moment.
+fn show_snoozed(config: &Config, desktop: &mut dyn Desktop) {
+    for (message, env) in crate::snooze::take_due(now_ms()) {
+        let ended = courier_core::toast::lifetime_minutes(&env, &config.lifetimes)
+            .is_some_and(|m| message.published_at_ms + u64::from(m) * 60_000 <= now_ms());
+        if ended {
+            logx::info(&format!(
+                "{}: snooze over, but its lifetime ended meanwhile — not shown again",
+                message.id
+            ));
+            continue;
+        }
+        match desktop.show(&message, &env) {
+            Ok(after) => {
+                logx::info(&format!("{}: snooze over — shown again", message.id));
+                crate::snooze::remember(&message, &env);
+                after();
+            }
+            Err(e) => logx::warn(&format!(
+                "{}: snooze over, but showing it again failed ({e})",
+                message.id
+            )),
+        }
+    }
+}
+
 /// Returns true when the render itself failed (AR22 re-probe signal).
 fn handle_message(
     config: &Config,
@@ -281,6 +313,7 @@ fn handle_message(
                         "rendered {} (payload id {}, attempt {})",
                         message.id, env.id, message.attempt
                     ));
+                    crate::snooze::remember(message, env);
                     after_ack();
                     false
                 }

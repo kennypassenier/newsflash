@@ -29,6 +29,8 @@ pub struct Config {
     pub sound_file: Option<PathBuf>,
     pub token: String,
     pub interactive_wait_margin_ms: u32,
+    /// How long Snooze hides a notification before it shows again (feat-11).
+    pub snooze_minutes: u32,
     /// How long notifications may exist (ephemeral + per priority).
     pub lifetimes: Lifetimes,
     /// How long info and warning popups stay on screen (feat-7).
@@ -56,6 +58,7 @@ struct RawConfig {
     language: Option<String>,
     ttl_minutes: Option<u64>,
     interactive_wait_margin_ms: Option<u32>,
+    snooze_minutes: Option<u32>,
     sound_file: Option<String>,
     token: Option<String>,
     token_file: Option<String>,
@@ -153,6 +156,18 @@ pub fn load(path: &Path) -> Result<Config, String> {
 
     let token = resolve_token(raw.token_file.as_deref())?;
 
+    let snooze_minutes = match raw.snooze_minutes {
+        None => crate::snooze::DEFAULT_SNOOZE_MINUTES,
+        Some(m) if (1..=crate::snooze::MAX_SNOOZE_MINUTES).contains(&m) => m,
+        Some(m) => {
+            return Err(format!(
+                "snooze_minutes = {m} is out of range. Use 1 to {} minutes, or remove the key \
+                 for the default ({}).",
+                crate::snooze::MAX_SNOOZE_MINUTES,
+                crate::snooze::DEFAULT_SNOOZE_MINUTES
+            ));
+        }
+    };
     let interactive_wait_margin_ms = raw
         .interactive_wait_margin_ms
         .unwrap_or(DEFAULT_INTERACTIVE_WAIT_MARGIN_MS);
@@ -216,6 +231,7 @@ pub fn load(path: &Path) -> Result<Config, String> {
         sound_file,
         token,
         interactive_wait_margin_ms,
+        snooze_minutes,
         lifetimes,
         popup,
         link_base_url,

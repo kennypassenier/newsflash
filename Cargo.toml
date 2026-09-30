@@ -3,7 +3,7 @@ resolver = "2"
 members = ["courier-core", "newsflash", "newsflash-setup", "newsflash-win"]
 
 [workspace.package]
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 license = "MIT"
 

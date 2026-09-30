@@ -62,6 +62,7 @@ fn config_for(hub_url: &str) -> Config {
         sound_file: None,
         token: "mock-token-XYZ".into(),
         interactive_wait_margin_ms: 30_000,
+        snooze_minutes: 15,
         lifetimes: Default::default(),
         popup: Default::default(),
         link_base_url: None,

@@ -240,6 +240,19 @@ pub fn handle_click(click: &Click, client: Option<&HubClient>, echo: bool) {
                 ));
                 return;
             }
+            if action_id == newsflash::snooze::SNOOZE_ACTION {
+                let minutes = click
+                    .inputs
+                    .iter()
+                    .find(|(k, _)| k == "snooze_minutes")
+                    .and_then(|(_, v)| v.trim().parse().ok());
+                match newsflash::snooze::snooze(&hub_id, minutes, newsflash::run::now_ms()) {
+                    Some(m) => say(format!("{hub_id}: snoozed, shows again in {m} min")),
+                    None => logx::warn(&format!(
+                        "{hub_id}: snooze clicked, but the message is no longer known"
+                    )),
+                }
+            }
             match client {
                 Some(c) => publish_action_result(
                     c,
