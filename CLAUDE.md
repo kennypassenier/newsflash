@@ -81,8 +81,8 @@ is in `docs/WINDOWS.md`.
   (450e016) rebuilds newsflash when the version moves (0.2.0 since PR #5)
   and then runs `newsflash install`, which copies it to `~/.local/bin`,
   writes the chime, sets `sound_file` and restarts the unit (feat-9).
-  Nothing manual is left on Garuda. Windows runs 0.2.2 since
-  2026-09-28 13:52 local (installed from WSL with `newsflash-win.exe
+  Nothing manual is left on Garuda. Windows runs 0.2.3 since
+  2026-09-30 19:04 local (installed from WSL with `newsflash-win.exe
   install`).
 - **feat-10, no popups over a game (Windows, 2026-09-28):** built after
   a toast crossed Oblivion Remastered. 0.2.1 used the shell's `BUSY`
@@ -97,9 +97,12 @@ is in `docs/WINDOWS.md`.
   Now a Snooze click publishes the original envelope to
   `notify.kenny.snooze` with kyu's `?delay=` (W4), due after
   `snooze_minutes` (15); the courier reads that topic between long polls
-  without a TTL check (kyu counts a TTL from the publish time). Built,
-  lint-clean on both OSes; tests and the Windows install wait for
-  Kenny's release go (0.2.3).
+  without a TTL check (kyu counts a TTL from the publish time).
+  Released 2026-09-30 on Kenny's go: `scripts/check.sh` green (gates,
+  Windows tests, build), 0.2.3 installed on Windows. Measured live: a
+  message published to `notify.kenny.snooze` with `?delay=30000` at
+  17:04:37Z (due 17:05:07Z) was rendered at 17:05:18Z, id
+  01M3SMCY47ZK35FFD181VX4FV7. Garuda gets 0.2.3 through ws-tools.
 - **Clicking a toast opens a page (asked 2026-09-29):** already built as
   feat-win-5 / feat-6 (`click_url`, paths via `link_base_url`). It works
   only when the sender sets `click_url`; homelab's notifications set
