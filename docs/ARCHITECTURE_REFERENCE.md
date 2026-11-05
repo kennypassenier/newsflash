@@ -34,8 +34,8 @@ Since 2026-09-24 the workspace has four crates:
 `render::LinuxDesktop` and `newsflash_win::toast::WinDesktop` are the
 two implementations of `run::Desktop` (arch-1).
 
-`courier-core` (separate crate, zero ambient I/O — enforced by gate
-and CI) holds everything decidable without the world: envelope
+`courier-core` (separate crate, zero ambient I/O — enforced by the
+gate) holds everything decidable without the world: envelope
 parsing, the settle table, dedup bookkeeping, toast mapping, backoff,
 hub-response parsing, error classification. `newsflash` is the
 shell that gives it a hub, a desktop, a filesystem and a clock.

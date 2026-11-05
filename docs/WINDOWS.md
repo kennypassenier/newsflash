@@ -43,8 +43,8 @@ The feat-win IDs below follow the same style as FEATURES.md.
 window; see `docs/SETUP.md`. The steps below are the command-line
 equivalent.
 
-1. Build (see [Building](#building)) or download the `newsflash-windows`
-   CI artifact. You need `newsflash-win.exe` and `newsflash-winw.exe`
+1. Build (see [Building](#building)) or run `scripts/check.sh`, which
+   leaves both in `dist/windows/`. You need `newsflash-win.exe` and `newsflash-winw.exe`
    side by side.
 2. `newsflash-win.exe install` does the following:
    - copies both binaries to `%LOCALAPPDATA%\Programs\newsflash\` as
@@ -266,7 +266,9 @@ Gates: `cargo test --all` on Linux covers every toast decision
 safety, activation codec, live-update binding) and the platform-neutral
 shell (`images`, `logfile`, `winconfig`). The WinRT/COM shell is
 `cfg(windows)`. The local gate cross-lints it when cargo-xwin is
-installed, and CI's `windows` job builds, lints and tests it natively.
+installed. `scripts/check.sh` lints it with cargo-xwin in docker, runs its
+tests on real Windows through WSL interop and builds the release binaries
+into `dist/windows/`; there is no CI.
 
 ## Windows-port decisions (ratified 2026-09-26)
 

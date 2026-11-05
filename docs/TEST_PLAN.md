@@ -10,13 +10,13 @@ and every accepted limitation.
 
 | Suite | Runs | What it proves |
 |---|---|---|
-| `courier-core` unit tests (41) | `cargo test`, CI | The pure decision logic: envelope v1 tolerant reader + poison classes, settle table (every row), dedup bookkeeping, toast mapping (language fallback, priority table, truncation, markup escape), backoff schedule, hub-response parsing, error classification |
-| Vector tests (2) | `cargo test`, CI | The envelope v1 DRAFT pinned — a pipeline-v2 schema change trips these, which is the mini-round tripwire (SCOPE S7) |
-| `config_tests` (1 sweep) | `cargo test`, CI | Every broken-config class fails naming field + remedy (M2); token source order incl. inline-token refusal and 0600 check (AR10) |
-| `state_tests` (4) | `cargo test`, CI | Dedup store on a real filesystem: round-trip, corrupt-file fail-open, dir creation, atomic replace (K4/AR6) |
-| `mock_hub_tests` (7) | `cargo test`, CI | Request shapes on the wire (URLs, auth header, one-field policy PUT), against the **captured** real `envelope=json` response — the mock serves drill evidence, not fiction (AR18); plus the K9 plaintext scan spawning the real binary |
-| `render_tests` (1 sweep) | `cargo test`, CI | Subprocess argv per priority, `--` separator, escape, failure and timeout branches, daemon probe, detached chime (AR12/AR19/AR22) |
-| `loop_tests` (6) | `cargo test`, CI | The REAL binary against a scripted mock hub: archived→unarchive→resume, auth-rejected naming + remedy + no token in output, hold-without-consuming while the daemon is absent, exactly one render across a SIGKILL + redelivery (S6b), render-failure→nack+re-probe, SIGTERM settle + the journal lifecycle lines (M4/M11) |
+| `courier-core` unit tests (41) | `cargo test` | The pure decision logic: envelope v1 tolerant reader + poison classes, settle table (every row), dedup bookkeeping, toast mapping (language fallback, priority table, truncation, markup escape), backoff schedule, hub-response parsing, error classification |
+| Vector tests (2) | `cargo test` | The envelope v1 DRAFT pinned — a pipeline-v2 schema change trips these, which is the mini-round tripwire (SCOPE S7) |
+| `config_tests` (1 sweep) | `cargo test` | Every broken-config class fails naming field + remedy (M2); token source order incl. inline-token refusal and 0600 check (AR10) |
+| `state_tests` (4) | `cargo test` | Dedup store on a real filesystem: round-trip, corrupt-file fail-open, dir creation, atomic replace (K4/AR6) |
+| `mock_hub_tests` (7) | `cargo test` | Request shapes on the wire (URLs, auth header, one-field policy PUT), against the **captured** real `envelope=json` response — the mock serves drill evidence, not fiction (AR18); plus the K9 plaintext scan spawning the real binary |
+| `render_tests` (1 sweep) | `cargo test` | Subprocess argv per priority, `--` separator, escape, failure and timeout branches, daemon probe, detached chime (AR12/AR19/AR22) |
+| `loop_tests` (6) | `cargo test` | The REAL binary against a scripted mock hub: archived→unarchive→resume, auth-rejected naming + remedy + no token in output, hold-without-consuming while the daemon is absent, exactly one render across a SIGKILL + redelivery (S6b), render-failure→nack+re-probe, SIGTERM settle + the journal lifecycle lines (M4/M11) |
 | `live_hub_tests` (6, `#[ignore]`) | `scripts/drill.sh`, local | What no mock can express, against the real kyu binary: publish/receive/ack round-trip, policy bootstrap effect + read-back, redelivery with attempt count, poison → visible dead letter, unarchive no-op, hub dying and returning mid-run (K8/S6d) |
 | Manual drills | logged in `docs/DRILL_LOG.md` | Real-desktop rendering (Plasma), S6c end-to-end TTL expiry with the courier down, systemd unit verify, latch-under-systemd, M7 restore-from-zero |
 
@@ -80,5 +80,5 @@ topic/subscription refused, ttl overflow refused), G11-part
 ## Coverage note
 
 No coverage percentage is enforced; the registry above (feature ID →
-suite) is the coverage instrument, per the procedure's L6 rule. CI
-runs every non-ignored suite on every push once the remote exists.
+suite) is the coverage instrument, per the procedure's L6 rule. The
+non-ignored suites run in the commit gate and in `scripts/check.sh`; there is no CI.
